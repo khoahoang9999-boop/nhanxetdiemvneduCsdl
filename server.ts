@@ -12,13 +12,19 @@ let adminConfig: any = {
 };
 
 try {
-  const serviceAccountPath = path.join(process.cwd(), 'serviceAccountKey.json');
-  if (fs.existsSync(serviceAccountPath)) {
-    const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+  const envServiceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+  if (envServiceAccount) {
+    const serviceAccount = JSON.parse(envServiceAccount);
     adminConfig.credential = admin.credential.cert(serviceAccount);
+  } else {
+    const serviceAccountPath = path.join(process.cwd(), 'serviceAccountKey.json');
+    if (fs.existsSync(serviceAccountPath)) {
+      const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+      adminConfig.credential = admin.credential.cert(serviceAccount);
+    }
   }
 } catch (e) {
-  console.error("Failed to load serviceAccountKey.json", e);
+  console.error("Failed to load Firebase Admin credentials", e);
 }
 
 // If GOOGLE_APPLICATION_CREDENTIALS is not set, it might fail in some environments
