@@ -1,0 +1,44 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+    
+    // Admin check helper
+    function isAdmin() {
+      return request.auth != null && (
+        request.auth.token.email == 'hvdkhoa89@gmail.com' ||
+        request.auth.token.email.lower().indexOf('admin') >= 0
+      );
+    }
+
+    match /users/{userId} {
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      
+      // Initial creation
+      allow create: if request.auth != null && request.auth.uid == userId;
+      
+      // Updates by user: Cannot modify credits, expiryDate, bankCode
+      allow update: if request.auth != null && (
+        isAdmin() || (
+          request.auth.uid == userId && 
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['credits', 'expiryDate', 'bankCode'])
+        )
+      );
+    }
+    
+    match /config/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // Payment logs (Optional, but good for backend to store logs)
+    match /transactions/{txId} {
+      allow read: if isAdmin();
+      allow write: if false; // Only backend (admin) can write
+    }
+  }
+}

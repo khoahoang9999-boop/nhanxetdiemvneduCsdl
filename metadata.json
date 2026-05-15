@@ -1,0 +1,8 @@
+{
+  "name": "Trợ lý nhận xét điểm ngày 15/5/2026 đêm",
+  "description": "",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

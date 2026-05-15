@@ -1,0 +1,392 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Cấu hình Lời phê</title>
+    <link rel="stylesheet" href="/src/index.css" />
+    <style>
+      body {
+        margin: 0;
+        font-family: sans-serif;
+      }
+      /* Button bounce feedback */
+      button { transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.2s ease, opacity 0.2s; cursor: pointer; }
+      button:active { transform: scale(0.95); }
+    </style>
+  </head>
+  <body class="bg-[#F8FAFC] flex font-sans text-slate-800 min-h-screen">
+    <!-- Sidebar -->
+    <aside class="w-72 bg-slate-900 text-white flex flex-col fixed h-full z-10">
+      <div class="p-6 border-b border-slate-800 flex flex-col items-center justify-center gap-2 text-center">
+        <div class="flex items-center justify-center gap-3">
+          <!-- Unified Logo: White K on Yellow Background -->
+          <div class="w-8 h-8 bg-yellow-400 rounded-lg flex items-center justify-center shadow-md border border-yellow-200/50 relative overflow-hidden shrink-0">
+            <div class="absolute inset-0 bg-gradient-to-tr from-yellow-500/20 to-transparent"></div>
+            <span class="text-white font-black text-xl select-none relative z-10 drop-shadow-sm">K</span>
+          </div>
+          <h1
+            class="text-[17px] font-bold tracking-wide bg-gradient-to-b from-yellow-50 to-yellow-300 bg-clip-text text-transparent"
+          >
+            Trợ lý Nhận xét Pro
+          </h1>
+        </div>
+      </div>
+      <nav class="flex-1 p-4 flex flex-col">
+        <div class="mb-4">
+          <div class="px-4 py-2 text-xs font-semibold text-red-500 uppercase tracking-wider">
+            Nền tảng (Platform)
+          </div>
+          <div class="px-4 space-y-2 mt-2">
+            <label class="flex items-center space-x-3 cursor-pointer group">
+              <input type="radio" name="configPlatform" value="csdl" checked class="w-4 h-4 text-red-600 bg-slate-800 border-slate-600 focus:ring-red-500 focus:ring-offset-slate-900">
+              <span class="text-sm font-medium text-slate-300 group-hover:text-white transition-colors">CSDL Ngành</span>
+            </label>
+            <label class="flex items-center space-x-3 cursor-pointer group">
+              <input type="radio" name="configPlatform" value="vnedu" class="w-4 h-4 text-red-600 bg-slate-800 border-slate-600 focus:ring-red-500 focus:ring-offset-slate-900">
+              <span class="text-sm font-medium text-slate-300 group-hover:text-white transition-colors">VnEdu</span>
+            </label>
+            <label class="flex items-center space-x-3 cursor-pointer group opacity-50" title="Chờ phát triển sau">
+              <input type="radio" name="configPlatform" value="smas" disabled class="w-4 h-4 text-orange-600 bg-slate-800 border-slate-600 focus:ring-orange-500 focus:ring-offset-slate-900">
+              <span class="text-sm font-medium text-slate-300 transition-colors">Smas (Đang phát triển)</span>
+            </label>
+          </div>
+        </div>
+        <div id="csdl-nav-sections" class="space-y-1">
+          <div class="px-4 mb-4">
+            <label class="text-[10px] font-bold text-red-500 uppercase tracking-wider mb-1 block">Cấp học</label>
+            <select
+              id="filterCapHoc"
+              class="w-full p-2 bg-slate-800 border border-slate-700 rounded-md text-sm text-white outline-none focus:border-red-500 transition-colors font-medium"
+            >
+              <option value="TH">Tiểu học</option>
+              <option value="THCS" selected>THCS</option>
+              <option value="THPT">THPT</option>
+            </select>
+          </div>
+          <div
+            class="px-4 py-2 text-xs font-semibold text-red-500 uppercase tracking-wider"
+          >
+            Lời phê mẫu
+          </div>
+          <button
+            id="tab-gvbm"
+            data-role="GVBM"
+            class="tab-btn w-full text-left flex items-center gap-3 px-4 py-2 bg-green-500/20 text-white border border-green-500/30 backdrop-blur-md shadow-sm rounded-md text-sm font-semibold transition-colors cursor-pointer"
+          >
+            Nhận xét môn học (HK)
+          </button>
+          <button
+            id="tab-th-nlpc"
+            data-role="TH_NLPC"
+            class="tab-btn w-full text-left flex items-center gap-3 px-4 py-2 rounded-md text-sm font-medium text-slate-300 border border-transparent hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+            style="display: none;"
+          >
+            ĐGĐK NL & PC (5.3.2)
+          </button>
+          <button
+            id="tab-hb-gvbm"
+            data-role="HOC_BA_GVBM"
+            class="tab-btn w-full text-left flex items-center gap-3 px-4 py-2 rounded-md text-sm font-medium text-slate-300 border border-transparent hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+          >
+            Học bạ (GVBM)
+          </button>
+          <button
+            id="tab-hb-gvcn"
+            data-role="HOC_BA_GVCN"
+            class="tab-btn w-full text-left flex items-center gap-3 px-4 py-2 rounded-md text-sm font-medium text-slate-300 border border-transparent hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+          >
+            Học bạ (GVCN)
+          </button>
+          <button
+            id="tab-vnedu-nlpc-hb"
+            data-role="VNEDU_NLPC_HB"
+            class="tab-btn w-full text-left flex items-center gap-3 px-4 py-2 rounded-md text-sm font-medium text-slate-300 border border-transparent hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+            style="display: none;"
+          >
+            Học bạ NLPC (VnEdu TH)
+          </button>
+          <button
+            id="tab-dgtx"
+            data-role="DGTX"
+            class="tab-btn w-full text-left flex items-center gap-3 px-4 py-2 rounded-md text-sm font-medium text-slate-300 border border-transparent hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+          >
+            ĐGTX (Theo tháng)
+          </button>
+          <button
+            id="tab-hieu-truong"
+            data-role="HIEU_TRUONG"
+            class="tab-btn w-full text-left flex items-center gap-3 px-4 py-2 rounded-md text-sm font-medium text-slate-300 border border-transparent hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+          >
+            Phê duyệt Hiệu trưởng
+          </button>
+        </div>
+
+        <div class="mt-auto pt-6">
+          <div class="mt-4 pt-4 border-t border-slate-800 flex justify-center">
+            <span class="whitespace-nowrap text-[10px] bg-slate-800 text-yellow-400 px-2 py-0.5 rounded font-mono border border-yellow-500/20 shadow-inner leading-none">Version 0.0.0</span>
+          </div>
+        </div>
+      </nav>
+      <div
+        class="py-1.5 px-2 bg-slate-900/40 backdrop-blur-md border-t border-white/5 text-[10px] leading-tight text-center"
+      >
+        <div class="font-medium tracking-wide bg-gradient-to-r from-yellow-400 via-yellow-200 to-yellow-400 bg-clip-text text-transparent drop-shadow-sm" style="background-size: 200% auto; animation: shine 3s linear infinite;">
+          Tác giả: Hoàng Văn Đình Khoa<br/>
+          SĐT: 0989.982.818 - Zalo: 0978.468.986
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main id="main-content-csdl" class="flex-1 flex flex-col relative ml-72">
+      <header
+        class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-10"
+      >
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-slate-500 font-medium italic"
+            >Dashboard /</span
+          >
+          <span class="text-sm font-semibold text-red-600" id="main-header-title"
+            >Quản lý Lời phê Mẫu</span
+          >
+        </div>
+        <div class="flex items-center gap-4">
+          <div id="auth-section" class="flex items-center gap-2 mr-4 border-r border-slate-200 pr-4">
+            <button id="loginBtn" class="px-4 py-2 text-sm font-medium bg-indigo-50 text-indigo-600 rounded-md shadow-sm border border-indigo-200 cursor-pointer hover:bg-indigo-100 transition-colors flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
+              Đăng nhập / Đăng ký
+            </button>
+            <div id="user-info" class="hidden items-center gap-3">
+              <div class="flex flex-col items-end">
+                <span id="user-points" class="text-sm font-bold text-indigo-700 bg-indigo-50 px-2 rounded-md shadow-inner border border-indigo-100">0 NĂM</span>
+                <span id="user-email-display" class="text-[10px] text-slate-500 font-medium"></span>
+              </div>
+              <div class="flex items-center gap-2">
+                <button id="topupBtn" class="px-3 py-1.5 text-xs font-semibold bg-amber-100 text-amber-700 rounded-md shadow-sm hover:bg-amber-200 cursor-pointer transition-colors">Gia hạn</button>
+                <button id="adminBtn" class="hidden px-3 py-1.5 text-xs font-semibold bg-slate-800 text-white rounded-md shadow-sm hover:bg-slate-700 cursor-pointer transition-colors">Admin</button>
+                <button id="logoutBtn" class="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors" title="Đăng xuất">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+          <button
+            id="resetConfigBtn"
+            class="px-5 py-2 text-sm font-medium bg-blue-600 text-white rounded-md shadow drop-shadow-sm cursor-pointer hover:bg-blue-700 transition-colors flex items-center gap-2"
+          >
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Khôi phục mặc định
+          </button>
+          <button
+            id="saveConfigBtn"
+            class="px-5 py-2 text-sm font-medium bg-blue-600 text-white rounded-md shadow drop-shadow-sm cursor-pointer hover:bg-blue-700 transition-colors flex items-center gap-2"
+          >
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
+              ></path>
+            </svg>
+            Lưu Cấu Hình
+          </button>
+        </div>
+      </header>
+
+      <div id="viewTemplates" class="p-8 flex flex-col gap-8 w-full">
+        <div class="w-full space-y-6">
+          <!-- Filters -->
+          <div
+            class="flex flex-wrap gap-4 mb-2 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm"
+          >
+
+            <div class="flex-1 min-w-[150px]">
+              <label
+                class="text-[10px] font-bold text-red-500 uppercase tracking-wider mb-1 block"
+                >Khối lớp</label
+              >
+              <select
+                id="filterKhoiLop"
+                class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 transition-colors font-medium"
+              >
+                <!-- Dynamic -->
+              </select>
+            </div>
+            <div class="flex-1 min-w-[200px]" id="filterMonHocContainer">
+              <label
+                class="text-[10px] font-bold text-red-500 uppercase tracking-wider mb-1 block"
+                >Môn học</label
+              >
+              <select
+                id="filterMonHoc"
+                class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 transition-colors font-medium"
+              >
+                <!-- Dynamic -->
+              </select>
+            </div>
+            
+            <div class="flex-1 min-w-[200px]" id="filterHocKyContainer" style="display: none">
+              <label
+                class="text-[10px] font-bold text-red-500 uppercase tracking-wider mb-1 block"
+                >Học kỳ</label
+              >
+              <select
+                id="filterHocKy"
+                class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 transition-colors font-medium"
+              >
+                <option value="Học kỳ 1">Học kỳ 1</option>
+                <option value="Học kỳ 2">Học kỳ 2</option>
+              </select>
+            </div>
+            
+            <div class="flex-1 min-w-[200px]" id="filterTieuChiContainer" style="display: none">
+              <label
+                class="text-[10px] font-bold text-red-500 uppercase tracking-wider mb-1 block"
+                >Tiêu chí (Tiểu học)</label
+              >
+              <select
+                id="filterTieuChi"
+                class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 transition-colors font-medium"
+              >
+                <!-- Dynamic -->
+              </select>
+            </div>
+            <div class="flex-1 min-w-[120px]" id="filterThangContainer" style="display: none">
+              <label class="text-[10px] font-bold text-red-500 uppercase tracking-wider mb-1 block">Tháng</label>
+              <select id="filterThang" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 transition-colors font-medium">
+                <option value="8">Tháng 8</option>
+                <option value="9">Tháng 9</option>
+                <option value="10">Tháng 10</option>
+                <option value="11">Tháng 11</option>
+                <option value="12">Tháng 12</option>
+                <option value="1">Tháng 1</option>
+                <option value="2">Tháng 2</option>
+                <option value="3">Tháng 3</option>
+                <option value="4">Tháng 4</option>
+                <option value="5">Tháng 5</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Alert for Roles -->
+          <div
+            id="roleAlert"
+            class="bg-blue-50/80 border border-blue-100 p-5 rounded-xl text-sm text-blue-900 shadow-sm flex gap-3 items-start"
+            style="display: none"
+          >
+            <svg
+              class="w-5 h-5 text-blue-500 shrink-0 mt-0.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              ></path>
+            </svg>
+            <div>
+              <p class="font-bold">Nhận xét Cuối năm (Ghi Học bạ):</p>
+              <ul class="list-disc ml-5 mt-2 text-blue-800">
+                <li>
+                  Bạn có thể nhấn Enter để xuống dòng, hệ thống sẽ tự động tách
+                  thành 3 dòng kết quả.
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Grid Content -->
+          <div id="configContainer" class="flex flex-col gap-6">
+            <!-- Dynamic rendering here -->
+          </div>
+
+          <!-- CSV Import UI -->
+          <div
+            class="bg-blue-50 border border-blue-100 p-8 rounded-2xl flex items-center justify-between shadow-sm mt-8"
+          >
+            <div class="flex items-center gap-5">
+              <div
+                class="p-3 bg-blue-600 text-white rounded-full shadow-lg shadow-blue-200 shrink-0"
+              >
+                <svg
+                  class="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-base font-bold text-blue-950">
+                  Nhập liệu hàng loạt bằng Excel
+                </h3>
+                <p class="text-sm text-blue-700 mt-0.5">
+                  Tải lên tệp .xlsx (Cấu trúc Cột: Cấp Học, Khối Lớp, Vai Trò,
+                  Môn Học, Mức Độ, Điểm Từ, Điểm Đến, Mã NX, Lời Phê)
+                </p>
+                <div class="flex gap-2 items-center mt-3">
+                  <input
+                    type="file"
+                    id="csvFileInput"
+                    accept=".xlsx,.xls"
+                    class="text-xs file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200 cursor-pointer text-red-600 font-medium"
+                  />
+                  <button
+                    id="downloadTemplateBtn"
+                    class="px-4 py-2 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 rounded-md cursor-pointer transition-colors shadow-sm whitespace-nowrap"
+                  >
+                    Tải File Mẫu
+                  </button>
+                </div>
+              </div>
+            </div>
+            <button
+              id="importCsvBtn"
+              class="px-8 py-3 bg-blue-600 text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-200/50 cursor-pointer hover:bg-blue-700 hover:shadow-blue-300 transition-all uppercase tracking-wider"
+            >
+              Tải lên
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Custom Modals -->
+    <div id="custom-modal-overlay" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center">
+      <div id="custom-modal" class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden transform scale-95 opacity-0 transition-all duration-200">
+        <div class="p-6">
+          <h3 id="custom-modal-title" class="text-xl font-bold text-slate-800 tracking-tight mb-2">Xác nhận</h3>
+          <p id="custom-modal-message" class="text-slate-600 text-sm leading-relaxed mb-6"></p>
+          <div class="flex items-center justify-end gap-3">
+            <button id="custom-modal-cancel" class="px-4 py-2 text-sm font-semibold text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors cursor-pointer">Hủy</button>
+            <button id="custom-modal-confirm" class="px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors cursor-pointer">Đồng ý</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/options.js"></script>
+  </body>
+</html>
