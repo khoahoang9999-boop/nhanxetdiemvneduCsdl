@@ -180,7 +180,8 @@ auth.onAuthStateChanged(user => {
         }
         
         if (typeof chrome !== 'undefined' && chrome.storage) {
-             chrome.storage.local.set({ authState: { uid: user.uid, email: user.email, credits: 0, points: 0, pendingDeduction: 0 } });
+             const isAdmin = user.email === 'admin@admin.com' || (user.email && user.email.toLowerCase().includes("admin")) || user.email === 'hvdkhoa89@gmail.com';
+             chrome.storage.local.set({ authState: { uid: user.uid, email: user.email, credits: 0, points: 0, pendingDeduction: 0, isAdmin } });
         }
         
         // Cập nhật Header
@@ -351,11 +352,13 @@ async function syncUserFirestore(user) {
                              let currentPoints = data.points || 0;
                              userRef.update({ points: Math.max(0, currentPoints - pending) });
                              
+                             const isAdmin = user.email === 'admin@admin.com' || (user.email && user.email.toLowerCase().includes("admin")) || user.email === 'hvdkhoa89@gmail.com';
                              chrome.storage.local.set({ 
-                                authState: { ...newAuthState, uid: user.uid, email: user.email, credits: data.credits || 0, points: Math.max(0, currentPoints - pending) } 
+                                authState: { ...newAuthState, uid: user.uid, email: user.email, credits: data.credits || 0, points: Math.max(0, currentPoints - pending), isAdmin } 
                              });
                          } else {
-                             chrome.storage.local.set({ authState: { uid: user.uid, email: user.email, credits: data.credits || 0, points: data.points || 0, pendingDeduction: 0 } });
+                             const isAdmin = user.email === 'admin@admin.com' || (user.email && user.email.toLowerCase().includes("admin")) || user.email === 'hvdkhoa89@gmail.com';
+                             chrome.storage.local.set({ authState: { uid: user.uid, email: user.email, credits: data.credits || 0, points: data.points || 0, pendingDeduction: 0, isAdmin } });
                          }
                      });
                 }

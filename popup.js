@@ -127,21 +127,25 @@ document.addEventListener("DOMContentLoaded", () => {
                     updateDoc(doc(db, "users", user.uid), updateData);
                   });
                   // We already reset pendingDeduction above, but let's ensure authState is synced with latest data
+                  const isAdmin = user.email === 'admin@admin.com' || (user.email && user.email.toLowerCase().includes("admin")) || user.email === 'hvdkhoa89@gmail.com';
                   chrome.storage.local.set({ 
                     authState: { 
                       ...newAuthState,
                       credits: credits, 
-                      points: updateData.points
+                      points: updateData.points,
+                      isAdmin
                     } 
                   });
               } else {
+                  const isAdmin = user.email === 'admin@admin.com' || (user.email && user.email.toLowerCase().includes("admin")) || user.email === 'hvdkhoa89@gmail.com';
                   chrome.storage.local.set({ 
                     authState: { 
                       uid: user.uid, 
                       email: user.email, 
                       credits: credits, 
                       points: points,
-                      pendingDeduction: 0 
+                      pendingDeduction: 0,
+                      isAdmin
                     } 
                   });
               }
@@ -159,7 +163,13 @@ document.addEventListener("DOMContentLoaded", () => {
            }
         }
         if (userPoints) {
-           userPoints.textContent = `${points} Lượt`;
+           const isAdmin = user.email === "hvdkhoa89@gmail.com" || (user.email && user.email.toLowerCase().includes("admin"));
+           if (isAdmin) {
+               userPoints.style.display = "none";
+           } else {
+               userPoints.textContent = `${points} Lượt`;
+               userPoints.style.display = "";
+           }
         }
         
         if (userExpiryContainer && userExpiry) {

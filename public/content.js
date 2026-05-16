@@ -2801,13 +2801,15 @@ let editables = [];
       if (typeof chrome !== "undefined" && chrome.storage) {
         updatePointsUI = (authState) => {
           if (authState && authState.uid !== "guest") {
+            const isAdmin = authState.isAdmin;
             const credits = authState.credits || 0;
             const points = authState.points || 0;
             const createYearsBadge = (c) => `<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; min-width: 38px;"><span style="font-size: 16px; font-weight: 900; line-height: 1; text-align: center; width: 100%; display: flex; justify-content: center; margin-bottom: 1px; color: #fbbf24;">${c}</span><span style="font-size: 10px; line-height: 1; font-weight: 700; text-transform: uppercase; text-align: center; width: 100%; display: flex; justify-content: center; opacity: 0.9; letter-spacing: 0.5px;">năm</span></div>`;
-            const yearsText = createYearsBadge(credits > 0 ? credits : 0);
+            const createVipBadge = () => `<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; min-width: 38px;"><span style="font-size: 14px; font-weight: 900; line-height: 1; text-align: center; width: 100%; display: flex; justify-content: center; margin-bottom: 1px; color: #f87171;">VIP</span></div>`;
+            const yearsText = isAdmin ? createVipBadge() : createYearsBadge(credits > 0 ? credits : 0);
             
-            // Show points if they exist, otherwise show years
-            if (points > 0) {
+            // Show points if they exist, otherwise show years/VIP
+            if (!isAdmin && points > 0) {
               lblPoints.innerHTML = `<span style="background: #10b981; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px;">${points} lượt</span> <span style="opacity:0.8; font-size:10px;">|</span> ${yearsText} <div style="display: flex; align-items: center; margin-left: 2px;">${whiteDiamondSvg}</div>`;
             } else {
               lblPoints.innerHTML = `${yearsText} <div style="display: flex; align-items: center; margin-left: 2px;">${whiteDiamondSvg}</div>`;
@@ -2868,6 +2870,7 @@ let editables = [];
           if (
             res.authState &&
             res.authState.uid !== "guest" &&
+            !res.authState.isAdmin &&
             (res.authState.credits || 0) <= 0 &&
             (res.authState.points || 0) <= 0
           ) {
@@ -2890,14 +2893,16 @@ let editables = [];
           if (res.authState && res.authState.uid !== "guest") {
             const p = res.authState.points || 0;
             const c = res.authState.credits || 0;
+            const isAdmin = res.authState.isAdmin;
             
-            if (p > 0 || c > 0) {
-              // Prioritize points first
-              if (p > 0) {
+            if (isAdmin || p > 0 || c > 0) {
+              // Prioritize points first, but do nothing if admin
+              if (!isAdmin && p > 0) {
                 res.authState.points -= 1;
                 res.authState.pendingDeduction = (res.authState.pendingDeduction || 0) + 1;
               } else {
                 // If points are 0 but credits > 0, we don't deduct anything (it's unlimited)
+                // If admin, we don't deduct anything.
                 // Do not increment pendingDeduction
               }
               
@@ -2923,7 +2928,7 @@ let editables = [];
             })
             .catch((err) => {
               // Rollback visual deduction on error
-              if (res.authState && res.authState.uid !== "guest") {
+              if (res.authState && res.authState.uid !== "guest" && !res.authState.isAdmin) {
                 // If we deducted a point, add it back
                 res.authState.points = (res.authState.points || 0) + 1;
                 res.authState.pendingDeduction = Math.max(

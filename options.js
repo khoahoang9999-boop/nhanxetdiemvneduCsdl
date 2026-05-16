@@ -114,23 +114,41 @@ document.addEventListener("DOMContentLoaded", () => {
                });
                
                // Update local state with latest data
+               const isAdmin = user.email === 'admin@admin.com' || (user.email && user.email.toLowerCase().includes("admin")) || user.email === 'hvdkhoa89@gmail.com';
                chrome.storage.local.set({ 
                  authState: { 
                    ...newAuthState, 
                    credits: credits, 
-                   points: Math.max(0, points - pending)
+                   points: Math.max(0, points - pending),
+                   isAdmin
                  } 
                });
            } else {
-               chrome.storage.local.set({ authState: { uid: user.uid, email: user.email, credits: Math.max(0, credits), points: points, pendingDeduction: 0 } });
+               const isAdmin = user.email === 'admin@admin.com' || (user.email && user.email.toLowerCase().includes("admin")) || user.email === 'hvdkhoa89@gmail.com';
+               chrome.storage.local.set({ authState: { uid: user.uid, email: user.email, credits: Math.max(0, credits), points: points, pendingDeduction: 0, isAdmin } });
            }
         });
 
+        const isAdmin = user.email === 'admin@admin.com' || (user.email && user.email.toLowerCase().includes("admin")) || user.email === 'hvdkhoa89@gmail.com';
+
         if (userCreditsDisplay) {
-           userCreditsDisplay.innerText = `${Math.max(0, credits)} NĂM`;
+           if (isAdmin) {
+             userCreditsDisplay.innerText = `VIP`;
+             userCreditsDisplay.classList.remove("text-indigo-700", "bg-indigo-50", "border-indigo-100");
+             userCreditsDisplay.classList.add("text-red-700", "bg-red-50", "border-red-100");
+           } else {
+             userCreditsDisplay.innerText = `${Math.max(0, credits)} NĂM`;
+             userCreditsDisplay.classList.add("text-indigo-700", "bg-indigo-50", "border-indigo-100");
+             userCreditsDisplay.classList.remove("text-red-700", "bg-red-50", "border-red-100");
+           }
         }
         if (userPointsDisplay) {
-           userPointsDisplay.innerText = `${Math.max(0, points)} LƯỢT`;
+           if (isAdmin) {
+             userPointsDisplay.style.display = "none";
+           } else {
+             userPointsDisplay.style.display = "";
+             userPointsDisplay.innerText = `${Math.max(0, points)} LƯỢT`;
+           }
         }
       });
     } else {
