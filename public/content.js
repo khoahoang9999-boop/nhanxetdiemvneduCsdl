@@ -1471,7 +1471,7 @@ import { generateAllSampleData } from "../shared.js";
       throw new Error("Không tìm thấy ô nhập liệu nào. Vui lòng thử click vào một học sinh ở bên trái.");
     }
 
-    let itemsOrder = [
+    let itemsOrderParams = [
       { group: "Năng lực chung", name: "Nhận xét chung" },
       { group: "Năng lực chung", name: "Tự chủ và tự học" },
       { group: "Năng lực chung", name: "Giao tiếp và hợp tác" },
@@ -1481,6 +1481,8 @@ import { generateAllSampleData } from "../shared.js";
       { group: "Năng lực đặc thù", name: "Ngôn ngữ" },
       { group: "Năng lực đặc thù", name: "Tính toán" },
       { group: "Năng lực đặc thù", name: "Khoa học" },
+      { group: "Năng lực đặc thù", name: "Công nghệ" },
+      { group: "Năng lực đặc thù", name: "Tin học" },
       { group: "Năng lực đặc thù", name: "Thẩm mĩ" },
       { group: "Năng lực đặc thù", name: "Thể chất" },
       
@@ -1494,35 +1496,69 @@ import { generateAllSampleData } from "../shared.js";
 
     let filledCount = 0;
     
-    for (let i = 0; i < Math.min(textareas.length, itemsOrder.length); i++) {
-       let ta = textareas[i];
-       let currentVal = ta.tagName.toLowerCase() === "div" ? ta.innerText.trim() : ta.value.trim();
-       if (currentVal) continue;
+    for (let i = 0; i < textareas.length; i++) {
+        let ta = textareas[i];
+        
+        let matchedItem = null;
+        let tempWalker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
+        tempWalker.currentNode = ta;
+        
+        let validTexts = [];
+        let checks = 0;
+        while (tempWalker.previousNode() && checks < 20) {
+            let t = tempWalker.currentNode.nodeValue.trim();
+            if (t.length >= 2) {
+                validTexts.push(t.toLowerCase());
+                if (validTexts.length >= 6) break; 
+            }
+            checks++;
+        }
+        
+        for (let tLower of validTexts) {
+            for (let item of itemsOrderParams) {
+                if (tLower.includes(item.name.toLowerCase())) {
+                    if (item.name === "Nhận xét chung") {
+                        let isPhamChat = validTexts.some(x => x.includes("phẩm chất") || x.includes("yêu nước"));
+                        let isNangLuc = validTexts.some(x => x.includes("năng lực") || x.includes("tự chủ"));
+                        if (isPhamChat && !isNangLuc) {
+                             matchedItem = itemsOrderParams.find(x => x.name === "Nhận xét chung" && x.group === "Phẩm chất");
+                        } else if (isNangLuc && !isPhamChat) {
+                             matchedItem = itemsOrderParams.find(x => x.name === "Nhận xét chung" && x.group === "Năng lực chung");
+                        } else {
+                             matchedItem = itemsOrderParams.find(x => x.name === "Nhận xét chung" && x.group === "Năng lực chung");
+                        }
+                    } else {
+                        matchedItem = item;
+                    }
+                    break;
+                }
+            }
+            if (matchedItem) break;
+        }
 
-       let matchedItem = itemsOrder[i];
-       
-       if (matchedItem) {
-           let groupData = commentsPool[matchedItem.group];
-           if (groupData) {
-               let itemData = groupData[matchedItem.name];
-               if (itemData && itemData.comments && itemData.comments.length > 0) {
-                   let randomComment = itemData.comments[Math.floor(Math.random() * itemData.comments.length)];
-                   if (config && config.removeTrailingPunctuation) {
-                     randomComment = randomComment.replace(/[,.;:!\s]+$/, "");
-                   }
+        let currentVal = ta.tagName.toLowerCase() === "div" ? ta.innerText.trim() : ta.value.trim();
+        if (currentVal || !matchedItem) continue;
 
-                   if (ta.tagName.toLowerCase() === "div") {
-                     ta.innerText = randomComment;
-                   } else {
-                     ta.value = randomComment;
-                   }
-                   ta.dispatchEvent(new Event("input", { bubbles: true }));
-                   ta.dispatchEvent(new Event("change", { bubbles: true }));
-                   ta.dispatchEvent(new Event("blur", { bubbles: true }));
-                   filledCount++;
-               }
-           }
-       }
+        let groupData = commentsPool[matchedItem.group];
+        if (groupData) {
+            let itemData = groupData[matchedItem.name];
+            if (itemData && itemData.comments && itemData.comments.length > 0) {
+                let randomComment = itemData.comments[Math.floor(Math.random() * itemData.comments.length)];
+                if (config && config.removeTrailingPunctuation) {
+                  randomComment = randomComment.replace(/[,.;:!\s]+$/, "");
+                }
+
+                if (ta.tagName.toLowerCase() === "div") {
+                  ta.innerText = randomComment;
+                } else {
+                  ta.value = randomComment;
+                }
+                ta.dispatchEvent(new Event("input", { bubbles: true }));
+                ta.dispatchEvent(new Event("change", { bubbles: true }));
+                ta.dispatchEvent(new Event("blur", { bubbles: true }));
+                filledCount++;
+            }
+        }
     }
     
     if (filledCount === 0) {
@@ -2475,8 +2511,8 @@ let editables = [];
           ? str
               .replace(/{HocSinh}/g, tenHS)
               .replace(/{Môn}/g, monToUse || "")
-              .replace(/\$?\{m\}/g, "")
-              .replace(/\s+/g, " ")
+              .replace(/\\$?\\{m\\}/g, "")
+              .replace(/[ \t\r]+/g, " ")
               .trim()
           : "";
 
@@ -2588,8 +2624,20 @@ let editables = [];
 
       // Integrated Big Run Button (replacing Brand + Run Button)
       const btnRun = document.createElement("button");
-      const iconUrl = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAACXBIWXMAAAsTAAALEwEAmpwYAAADA0lEQVR4nN2az2sTQRTH94/YGfWktKT4A9uKpgj+AW0tetWLN72bnQRU2qaNNoK31puCB71VWqwXb8WLFkECStW2thdNYqpof4Bk32YzT2YTWuLuhuxmsz/64J2yb/bznZn3srtvJMnGIEn6gZEplZF3wGhRZVQHRtEPV2v3KtbuTe5BgvRJrZqqyD2gkBd+wUKrrpB5NSXHmsKXE2RIVeh24LDMZmUUuqsq9LL1zDN5xM9t0s72Upk8bNo2KqM7QcNB6yuxXU6S7v2EZWQhaChw6gqdq8Er8pnAYZirrcSN6iRKZdAw4NpJRqrXeYzmKpAlsQKloEHArSu0IEWhdILtClBdchU8GkMtG2/09MnW4+90meOzcYTx445ZXAnQX2Xxf6vm5luK1SZOIS+tmeL5Vh617EC4BdTgV23g4662kW8CbOH/fHcN75sAkR/8x4o1/NQ51/C+CLCF//0NtamzbcF3XEAN/osZ/tcGapn+tuE7KyB9whr+5zpqmT5P4KFjAgR88bM1/GSvZ/DQEQG28F89hwfPBYz2IM9/MMNvrqE2edpzePBUwOpr5IVltDJxfSfgwUsBTa2qY+XRlQgLEPZ3q61/XPBLAN8pYeXZDeS7m+bf8h8Rbh0NrwC+8XYvWbWHI4i6ZrqmmpsLp4Dq+huE1JHG6xbGLIXqL8dDKCBn/SxUfT9rndSPr0ZDANw+Zvkw51VSSx0XIPLh/nnE8o4phheWDYGhFyC88uQaIueO4yAsAoy4xRmbpE5HQwAkD2N1ZdHTpJZ8FSB8rMd4G7NO6oEICBBJPT2IWAHTGLz4yXFSuxKgPbiAlafXG1ybHnI2xsywaQxjHIcv+Qfi02IxaBBw7/kD8HldIXeDBgHXTibqDe0ozj7lkKS99T4ZmQ8aCJz77H6bNSXHwtzgBvPsb5Vv0q7GXnFCvhiFkqoyqosTBdZHDRQyKNSF+qgBO3Sp+XmJJOkWTWQjScIz6xwU+ty0bZqZaCKLEitqregG+n7cxrgnWRK94L1qY2H/AAmuYBqO2CQnAAAAAElFTkSuQmCC";
-      const imgLogo = `<img src="${iconUrl}" style="width: 18px; height: 18px; margin-right: 4px; border-radius: 4px;" alt="Logo" />`;
+      const imgLogo = `
+        <svg style="width: 18px; height: 18px; margin-right: 4px; border-radius: 4px;" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="k-logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#fef08a" />
+              <stop offset="20%" stop-color="#facc15" />
+              <stop offset="100%" stop-color="#eab308" />
+            </linearGradient>
+          </defs>
+          <rect x="0" y="0" width="512" height="512" rx="100" ry="100" fill="url(#k-logo-grad)" />
+          <rect x="16" y="16" width="480" height="480" rx="84" ry="84" fill="none" stroke="#fef08a" stroke-width="12" stroke-opacity="0.8" />
+          <text x="256" y="375" font-family="Arial, sans-serif" font-weight="900" font-size="340" fill="#ffffff" text-anchor="middle" dominant-baseline="alphabetic">K</text>
+        </svg>
+      `.replace(/\n/g, '').trim();
       btnRun.innerHTML = `${imgLogo}<span style="white-space: nowrap; font-weight: 700; margin: 0 4px;">CHẠY TỰ ĐỘNG ĐIỀN</span><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:14px;height:14px;display:block;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
       btnRun.style.cssText = `background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 9999px; padding: 4px 10px; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275); margin-right: 4px; font-size: 11px;`;
       btnRun.onmouseover = () => {
@@ -2665,8 +2713,8 @@ let editables = [];
 
       // Status / Topup button
       const btnTopup = document.createElement("button");
-      btnTopup.innerHTML = `Nâng cấp`;
-      btnTopup.style.cssText = `background: #fbbf24; color: #78350f; border: 1px solid #f59e0b; border-radius: 9999px; padding: 4px 8px; font-weight: 700; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 3px; transition: all 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275); white-space: nowrap; margin-left: 4px;`;
+      btnTopup.innerHTML = `Đăng nhập`;
+      btnTopup.style.cssText = `background: #fbbf24; color: #78350f; border: 1px solid #f59e0b; border-radius: 9999px; padding: 4px 8px; font-weight: 700; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 3px; transition: all 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275); white-space: nowrap; margin-left: auto;`;
       btnTopup.onmouseover = () => {
         btnTopup.style.background = "#f59e0b";
         btnTopup.style.transform = "scale(1.05)";
@@ -2683,7 +2731,15 @@ let editables = [];
       };
       btnTopup.onclick = (e) => {
         e.stopPropagation();
-        window.open("https://ais-dev-a66o7rlzcwe6wv43c3lzy4-224220661159.asia-southeast1.run.app/auth-ui.html?tab=topup", "_blank");
+        if (chrome && chrome.runtime && chrome.runtime.sendMessage) {
+          chrome.runtime.sendMessage({ action: "openAuth" });
+        } else {
+          if (typeof chrome !== "undefined" && chrome.tabs) {
+            chrome.runtime.sendMessage({ action: "openAuth" });
+          } else {
+            window.open(chrome.runtime.getURL("auth-ui.html"), "_blank");
+          }
+        }
       };
 
       const lblPoints = document.createElement("span");
@@ -2740,8 +2796,9 @@ let editables = [];
         widget.style.borderRadius = settingsOpen ? "16px" : "9999px";
       };
 
-      if (typeof chrome !== "undefined") {
-        const updatePointsUI = (authState) => {
+      let updatePointsUI = () => {};
+      if (typeof chrome !== "undefined" && chrome.storage) {
+        updatePointsUI = (authState) => {
           if (authState && authState.uid !== "guest") {
             const credits = authState.credits || 0;
             const points = authState.points || 0;
@@ -2754,15 +2811,12 @@ let editables = [];
               lblPoints.innerHTML = `${yearsText} ${whiteDiamondSvg}`;
             }
             
-            // Update button text to reflect major status if credits > 0
-            if (credits > 0) {
-               btnTopup.innerHTML = `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:12px;height:12px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> ${credits} Năm`;
-            } else {
-               btnTopup.innerHTML = `Nâng cấp`;
-            }
+            lblPoints.style.display = 'flex';
+            btnTopup.style.display = 'none';
           } else {
-            lblPoints.innerHTML = `<b>Đăng nhập</b>`;
-            btnTopup.innerHTML = `Nâng cấp`;
+            lblPoints.style.display = 'none';
+            btnTopup.style.display = 'flex';
+            btnTopup.innerHTML = `Đăng nhập`;
           }
         };
 

@@ -345,7 +345,7 @@ document.addEventListener("DOMContentLoaded", () => {
         str = str.replace(/bám sát chương trình Kết nối tri thức\./g, "hoàn thành tốt các nội dung học tập.");
         str = str.replace(/Kết nối tri thức/gi, "");
         str = str.replace(/Hòa nhập rất nhanh với nhịp độ năm học mới/gi, "Tiếp thu bài nhanh");
-        str = str.replace(/\s+/g, ' ').trim();
+        str = str.replace(/[ \t\r]+/g, ' ').trim();
         if (orig !== str) migrated = true;
         return str;
       };
