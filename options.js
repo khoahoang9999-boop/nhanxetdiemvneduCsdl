@@ -37,7 +37,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // -------- AUTHENTICATION SETUP --------
   const loginBtn = document.getElementById("loginBtn");
   const userInfo = document.getElementById("user-info");
-  const userPoints = document.getElementById("user-points");
+  const userCreditsDisplay = document.getElementById("user-credits");
+  const userPointsDisplay = document.getElementById("user-points");
   const userEmailDisplay = document.getElementById("user-email-display");
   const logoutBtn = document.getElementById("logoutBtn");
   const topupBtn = document.getElementById("topupBtn");
@@ -91,28 +92,45 @@ document.addEventListener("DOMContentLoaded", () => {
       if (unsubSnapshot) unsubSnapshot();
       unsubSnapshot = onSnapshot(doc(db, "users", user.uid), (docSnap) => {
         let credits = 0;
+        let points = 0;
         if (docSnap.exists()) {
-          credits = docSnap.data().credits || 0;
+          const data = docSnap.data();
+          credits = data.credits || 0;
+          points = data.points || 0;
         }
 
         chrome.storage.local.get(["authState"], (res) => {
            let pending = res.authState && res.authState.pendingDeduction ? res.authState.pendingDeduction : 0;
            if (pending > 0) {
-               // Deduct the pending points from Firebase points field
-               import("./src/firebase-config.js").then(({ updateDoc, increment }) => {
+               // Reset pending immediately to avoid race condition with multiple windows
+               const newAuthState = { ...res.authState, pendingDeduction: 0 };
+               chrome.storage.local.set({ authState: newAuthState });
+
+               // Deduct the pending points from Firebase points field (Cap at 0)
+               import("./src/firebase-config.js").then(({ updateDoc }) => {
                  updateDoc(doc(db, "users", user.uid), {
-                   points: increment(-pending)
+                   points: Math.max(0, points - pending)
                  });
                });
-               const currentPoints = res.authState && res.authState.points ? res.authState.points : 0;
-               chrome.storage.local.set({ authState: { uid: user.uid, email: user.email, credits: credits, points: Math.max(0, currentPoints - pending), pendingDeduction: 0 } });
+               
+               // Update local state with latest data
+               chrome.storage.local.set({ 
+                 authState: { 
+                   ...newAuthState, 
+                   credits: credits, 
+                   points: Math.max(0, points - pending)
+                 } 
+               });
            } else {
-               chrome.storage.local.set({ authState: { uid: user.uid, email: user.email, credits: credits, points: docSnap.data().points || 0, pendingDeduction: 0 } });
+               chrome.storage.local.set({ authState: { uid: user.uid, email: user.email, credits: Math.max(0, credits), points: points, pendingDeduction: 0 } });
            }
         });
 
-        if (userPoints) {
-           userPoints.innerText = `${credits} NĂM`;
+        if (userCreditsDisplay) {
+           userCreditsDisplay.innerText = `${Math.max(0, credits)} NĂM`;
+        }
+        if (userPointsDisplay) {
+           userPointsDisplay.innerText = `${Math.max(0, points)} LƯỢT`;
         }
       });
     } else {

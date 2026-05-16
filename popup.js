@@ -109,28 +109,29 @@ document.addEventListener("DOMContentLoaded", () => {
           chrome.storage.local.get(["authState"], (res) => {
               const pending = res.authState && res.authState.pendingDeduction ? res.authState.pendingDeduction : 0;
               if (pending > 0) {
-                  // Deduct from POINTS then CREDITS
-                  let currentPoints = points;
-                  let currentCredits = credits;
+                  // RESET PENDING IMMEDIATELY TO AVOID RACE CONDITION
+                  const newAuthState = { ...res.authState, pendingDeduction: 0 };
+                  chrome.storage.local.set({ authState: newAuthState });
+
+                  // Deduct from POINTS then CREDITS (Logic: only points for now)
+                  let currentPoints = points || 0;
                   let updateData = {};
                   
                   if (currentPoints >= pending) {
                       updateData.points = currentPoints - pending;
                   } else {
                       updateData.points = 0;
-                      // DO NOT deduct from credits (years)
                   }
 
                   import("./src/firebase-config.js").then(({ updateDoc }) => {
                     updateDoc(doc(db, "users", user.uid), updateData);
                   });
+                  // We already reset pendingDeduction above, but let's ensure authState is synced with latest data
                   chrome.storage.local.set({ 
                     authState: { 
-                      uid: user.uid, 
-                      email: user.email, 
-                      credits: updateData.credits !== undefined ? updateData.credits : credits, 
-                      points: updateData.points !== undefined ? updateData.points : points,
-                      pendingDeduction: 0 
+                      ...newAuthState,
+                      credits: credits, 
+                      points: updateData.points
                     } 
                   });
               } else {
@@ -153,12 +154,12 @@ document.addEventListener("DOMContentLoaded", () => {
                userCredits.textContent = "VIP";
                userCredits.classList.add("text-red-600", "font-black");
            } else {
-               userCredits.textContent = `${credits} Năm`;
+               userCredits.textContent = `${Math.max(0, credits)} Năm`;
                userCredits.classList.remove("text-red-600", "font-black");
            }
         }
         if (userPoints) {
-           userPoints.textContent = `${points} Điểm`;
+           userPoints.textContent = `${points} Lượt`;
         }
         
         if (userExpiryContainer && userExpiry) {
@@ -257,9 +258,11 @@ document.addEventListener("DOMContentLoaded", () => {
         const userRef = doc(db, "users", user.uid);
         const userDoc = await getDoc(userRef);
         if (userDoc.exists()) {
-          const credits = userDoc.data().credits || 0;
-          if (credits <= 0) {
-            setStatus("Bạn đã hết hạn sử dụng. Vui lòng gia hạn để tiếp tục!", "error");
+          const data = userDoc.data();
+          const credits = data.credits || 0;
+          const points = data.points || 0;
+          if (credits <= 0 && points <= 0) {
+            setStatus("Bạn đã hết lượt sử dụng và hạn VIP. Vui lòng gia hạn để tiếp tục!", "error");
             return;
           }
         } else {

@@ -2895,16 +2895,12 @@ let editables = [];
               // Prioritize points first
               if (p > 0) {
                 res.authState.points -= 1;
+                res.authState.pendingDeduction = (res.authState.pendingDeduction || 0) + 1;
               } else {
-                // Should we deduct from credits? Only if points are 0.
-                // If they have credits (years), we actually don't NEED to deduct anything if it's unlimited?
-                // But the user said: "với tài khoản có cả số lượt nhật xét thì hệ thống sẽ trừ lượt nhận xét trước. khi nào hết lượt với kiểm tra xem số năm nhận xét còn thời gian hay không."
-                // This implies credits (years) are UNLIMITED turns within that time.
-                // So if they have credits, we don't need to decrement anything besides points.
+                // If points are 0 but credits > 0, we don't deduct anything (it's unlimited)
+                // Do not increment pendingDeduction
               }
               
-              res.authState.pendingDeduction =
-                (res.authState.pendingDeduction || 0) + 1;
               chrome.storage.local.set({ authState: res.authState });
               updatePointsUI(res.authState);
             }

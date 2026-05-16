@@ -180,7 +180,7 @@ auth.onAuthStateChanged(user => {
         }
         
         if (typeof chrome !== 'undefined' && chrome.storage) {
-             chrome.storage.local.set({ authState: { uid: user.uid, email: user.email, credits: 0, pendingDeduction: 0 } });
+             chrome.storage.local.set({ authState: { uid: user.uid, email: user.email, credits: 0, points: 0, pendingDeduction: 0 } });
         }
         
         // Cập nhật Header
@@ -344,15 +344,16 @@ async function syncUserFirestore(user) {
                      chrome.storage.local.get(['authState'], (res) => {
                          let pending = res.authState && res.authState.pendingDeduction ? res.authState.pendingDeduction : 0;
                          if (pending > 0) {
+                             // Reset pending immediately to avoid race condition
+                             const newAuthState = { ...res.authState, pendingDeduction: 0 };
+                             chrome.storage.local.set({ authState: newAuthState });
+                             
                              let currentPoints = data.points || 0;
-                             if (currentPoints >= pending) {
-                                userRef.update({ points: firebase.firestore.FieldValue.increment(-pending) });
-                             } else {
-                                userRef.update({ 
-                                    points: 0
-                                });
-                             }
-                             chrome.storage.local.set({ authState: { uid: user.uid, email: user.email, credits: data.credits || 0, points: Math.max(0, currentPoints - pending), pendingDeduction: 0 } });
+                             userRef.update({ points: Math.max(0, currentPoints - pending) });
+                             
+                             chrome.storage.local.set({ 
+                                authState: { ...newAuthState, uid: user.uid, email: user.email, credits: data.credits || 0, points: Math.max(0, currentPoints - pending) } 
+                             });
                          } else {
                              chrome.storage.local.set({ authState: { uid: user.uid, email: user.email, credits: data.credits || 0, points: data.points || 0, pendingDeduction: 0 } });
                          }
@@ -373,7 +374,7 @@ async function syncUserFirestore(user) {
                         const divider = creditEl.parentElement.nextElementSibling;
                         if (divider && divider.classList.contains('bg-slate-200')) divider.classList.add('hidden');
                     } else {
-                        creditEl.textContent = data.credits || 0;
+                        creditEl.textContent = Math.max(0, data.credits || 0);
                         creditEl.parentElement.classList.add('text-blue-700', 'bg-blue-50', 'border-blue-100');
                         creditEl.parentElement.classList.remove('text-red-600', 'bg-red-50', 'border-red-100');
                         const labelEl = creditEl.nextElementSibling;
@@ -975,7 +976,7 @@ async function adminUpdateCredit() {
 
         await userRef.update(updateData);
         
-        const typeName = type === 'credits' ? 'năm VIP' : 'điểm dùng thử';
+        const typeName = type === 'credits' ? 'năm VIP' : 'lượt dùng';
         showToast(`Thành công! Đã ${amount > 0 ? 'cộng' : 'trừ'} ${Math.abs(amount)} ${typeName}.`, "success");
         document.getElementById('admin-credit-amount').value = '';
         refreshAdminVipPreview();
@@ -1134,7 +1135,7 @@ function loadAdminUserList() {
                         <span class="px-2.5 py-1 bg-red-50 text-red-700 rounded-full font-black text-[13px] border border-red-100 shadow-inner">VIP</span>
                     </td>
                     <td class="px-4 py-3 text-center w-[10%]">
-                         <span class="px-2.5 py-1 bg-amber-50 text-amber-700 rounded-full font-black text-[11px] border border-amber-100 shadow-inner">${data.points || 0} ĐIỂM</span>
+                         <span class="px-2.5 py-1 bg-amber-50 text-amber-700 rounded-full font-black text-[11px] border border-amber-100 shadow-inner">${data.points || 0} LƯỢT</span>
                     </td>
                     <td class="px-4 py-3 text-center w-[18%] text-[10px] font-black text-red-600 uppercase">
                         Vô hạn
@@ -1193,10 +1194,10 @@ function loadAdminUserList() {
                         </div>
                     </td>
                     <td class="px-4 py-3 text-center w-[12%]">
-                        <span class="px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full font-black text-[13px] border border-blue-100 shadow-inner">${u.credits || 0} NĂM</span>
+                        <span class="px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full font-black text-[13px] border border-blue-100 shadow-inner">${Math.max(0, (u.credits || 0))} NĂM</span>
                     </td>
                     <td class="px-4 py-3 text-center w-[10%]">
-                        <span class="px-2.5 py-1 bg-amber-50 text-amber-700 rounded-full font-black text-[11px] border border-amber-100 shadow-inner">${u.points || 0} ĐIỂM</span>
+                        <span class="px-2.5 py-1 bg-amber-50 text-amber-700 rounded-full font-black text-[11px] border border-amber-100 shadow-inner">${Math.max(0, (u.points || 0))} LƯỢT</span>
                     </td>
                     <td class="px-4 py-3 text-center w-[18%] text-[11px] sm:text-[12px] font-bold text-red-600">
                         <div>${u.expiryDateStr}</div>
