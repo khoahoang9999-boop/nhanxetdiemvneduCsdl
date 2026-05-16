@@ -2562,19 +2562,56 @@ let editables = [];
       successCount++;
     }
 
-    // 4. TIÊM API VÀO TRANG WEB SỬ DỤNG FILE INJECT.JS ĐỂ VƯỢT CSP
+    // 4. KIỂM TRA LOẠI LƯỚI ĐỂ CHỌN PHƯƠNG PHÁP ĐIỀN
+    const gridEl = document.querySelector(".RadGrid");
+    if (!gridEl) {
+      // 4a. PHƯƠNG PHÁP ĐIỀN CƠ BẢN DÀNH CHO SMAS / FORM HTML TIÊU CHUẨN
+      const changeValue = (el, val) => {
+        if (!el || !val) return;
+        const input = el.tagName === "INPUT" || el.tagName === "TEXTAREA" ? el : el.querySelector("input, textarea");
+        if (!input) return;
+        
+        let lastVal = input.value;
+        input.value = val;
+        
+        if (input.value !== lastVal) {
+          input.dispatchEvent(new Event("input", { bubbles: true }));
+          input.dispatchEvent(new Event("change", { bubbles: true }));
+          input.dispatchEvent(new Event("blur", { bubbles: true }));
+        }
+      };
+
+      for (let task of finalTasks) {
+        let { tr, rowIndex } = task;
+        let pData = fillData.find((d) => d.rowIndex === rowIndex);
+        if (!pData) continue;
+
+        let tds = Array.from(tr.querySelectorAll("td"));
+        let monMaTd = tr.querySelector("td.maNoiDungMonHocHDGD") || (colIndices.monMa !== -1 ? tds[colIndices.monMa] : null);
+        let monNdTd = tr.querySelector("td.noiDungMonHocHDGD") || (colIndices.monNd !== -1 ? tds[colIndices.monNd] : null);
+        let nlcMaTd = tr.querySelector("td.maNoiDungNangLucChung") || (colIndices.nlcMa !== -1 ? tds[colIndices.nlcMa] : null);
+        let nlcNdTd = tr.querySelector("td.noiDungNangLucChung") || (colIndices.nlcNd !== -1 ? tds[colIndices.nlcNd] : null);
+        let nldMaTd = tr.querySelector("td.maNoiDungNangLucDacThu") || (colIndices.nldMa !== -1 ? tds[colIndices.nldMa] : null);
+        let nldNdTd = tr.querySelector("td.noiDungNangLucDacThu") || (colIndices.nldNd !== -1 ? tds[colIndices.nldNd] : null);
+        let pcMaTd = tr.querySelector("td.maNoiDungPhamChatChuYeu") || (colIndices.pcMa !== -1 ? tds[colIndices.pcMa] : null);
+        let pcNdTd = tr.querySelector("td.noiDungPhamChatChuYeu") || (colIndices.pcNd !== -1 ? tds[colIndices.pcNd] : null);
+
+        if (pData.dienMaNX) {
+          changeValue(monMaTd, pData.monMa);
+          changeValue(nlcMaTd, pData.nlcMa);
+          changeValue(nldMaTd, pData.nldMa);
+          changeValue(pcMaTd, pData.pcMa);
+        }
+        changeValue(monNdTd, pData.monNd);
+        changeValue(nlcNdTd, pData.nlcNd);
+        changeValue(nldNdTd, pData.nldNd);
+        changeValue(pcNdTd, pData.pcNd);
+      }
+      return { count: successCount, detectedMon: currentMon };
+    }
+
+    // 4b. KIỂM TRA VÀ TIÊM API VÀO TRANG WEB SỬ DỤNG FILE INJECT.JS ĐỂ VƯỢT CSP (DÀNH CHO VNEDU / TELERIK)
     const eventName = "Telerik_Fast_Fill_Result_" + Date.now();
-    const bridgeId = "bot-data-bridge-super-fast";
-
-    // Dọn dẹp bridge cũ nếu có
-    let oldBridge = document.getElementById(bridgeId);
-    if (oldBridge) oldBridge.remove();
-
-    let bridge = document.createElement("div");
-    bridge.id = bridgeId;
-    bridge.style.display = "none";
-    bridge.innerText = JSON.stringify({ fillData, colIndices, eventName });
-    document.body.appendChild(bridge);
 
     const telerikResult = await new Promise((resolve) => {
       const handler = (e) => {
@@ -2589,12 +2626,10 @@ let editables = [];
         resolve({ status: "TIMEOUT" });
       }, 3000);
 
-      let script = document.createElement("script");
-      script.src = chrome.runtime.getURL("inject.js");
-      script.onload = function () {
-        this.remove();
-      };
-      (document.head || document.documentElement).appendChild(script);
+      chrome.runtime.sendMessage({
+        action: "executeTelerikBatch",
+        config: { fillData, colIndices, eventName }
+      });
     });
 
     if (telerikResult && telerikResult.status === "OK") {
@@ -2801,7 +2836,8 @@ let editables = [];
       if (typeof chrome !== "undefined" && chrome.storage) {
         updatePointsUI = (authState) => {
           if (authState && authState.uid !== "guest") {
-            const isAdmin = authState.isAdmin;
+            const email = (authState.email || "").toLowerCase();
+            const isAdmin = authState.isAdmin === true || email === 'admin@admin.com' || email.includes('admin') || email === 'hvdkhoa89@gmail.com';
             const credits = authState.credits || 0;
             const points = authState.points || 0;
             const createYearsBadge = (c) => `<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; min-width: 38px;"><span style="font-size: 16px; font-weight: 900; line-height: 1; text-align: center; width: 100%; display: flex; justify-content: center; margin-bottom: 1px; color: #fbbf24;">${c}</span><span style="font-size: 10px; line-height: 1; font-weight: 700; text-transform: uppercase; text-align: center; width: 100%; display: flex; justify-content: center; opacity: 0.9; letter-spacing: 0.5px;">năm</span></div>`;
@@ -2867,10 +2903,14 @@ let editables = [];
             }, 3000);
             return;
           }
+
+          const email = (res.authState.email || "").toLowerCase();
+          const isAdmin = res.authState.isAdmin === true || email === 'admin@admin.com' || email.includes('admin') || email === 'hvdkhoa89@gmail.com';
+
           if (
             res.authState &&
             res.authState.uid !== "guest" &&
-            !res.authState.isAdmin &&
+            !isAdmin &&
             (res.authState.credits || 0) <= 0 &&
             (res.authState.points || 0) <= 0
           ) {
@@ -2893,7 +2933,6 @@ let editables = [];
           if (res.authState && res.authState.uid !== "guest") {
             const p = res.authState.points || 0;
             const c = res.authState.credits || 0;
-            const isAdmin = res.authState.isAdmin;
             
             if (isAdmin || p > 0 || c > 0) {
               // Prioritize points first, but do nothing if admin
@@ -2928,7 +2967,10 @@ let editables = [];
             })
             .catch((err) => {
               // Rollback visual deduction on error
-              if (res.authState && res.authState.uid !== "guest" && !res.authState.isAdmin) {
+              const email = (res.authState.email || "").toLowerCase();
+            const isAdmin = res.authState.isAdmin === true || email === 'admin@admin.com' || email.includes('admin') || email === 'hvdkhoa89@gmail.com';
+
+            if (res.authState && res.authState.uid !== "guest" && !isAdmin) {
                 // If we deducted a point, add it back
                 res.authState.points = (res.authState.points || 0) + 1;
                 res.authState.pendingDeduction = Math.max(

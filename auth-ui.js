@@ -342,6 +342,24 @@ async function syncUserFirestore(user) {
                 const expiryDaysText = document.getElementById('expiry-days-text');
                 
                 if (typeof chrome !== 'undefined' && chrome.storage) {
+                     if (!window.__pendingListenerAdded) {
+                         window.__pendingListenerAdded = true;
+                         chrome.storage.onChanged.addListener((changes, area) => {
+                             if (area === 'local' && changes.authState) {
+                                 const newVal = changes.authState.newValue;
+                                 if (newVal && newVal.pendingDeduction > 0) {
+                                     const pending = newVal.pendingDeduction;
+                                     chrome.storage.local.set({ authState: { ...newVal, pendingDeduction: 0 } });
+                                     userRef.get().then(docSnap => {
+                                         if (docSnap.exists) {
+                                             userRef.update({ points: Math.max(0, (docSnap.data().points || 0) - pending) });
+                                         }
+                                     });
+                                 }
+                             }
+                         });
+                     }
+                     
                      chrome.storage.local.get(['authState'], (res) => {
                          let pending = res.authState && res.authState.pendingDeduction ? res.authState.pendingDeduction : 0;
                          if (pending > 0) {

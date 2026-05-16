@@ -106,6 +106,27 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         
         if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+          if (!window.__pendingListenerAddedPopup) {
+              window.__pendingListenerAddedPopup = true;
+              chrome.storage.onChanged.addListener((changes, area) => {
+                  if (area === 'local' && changes.authState) {
+                      const newVal = changes.authState.newValue;
+                      if (newVal && newVal.pendingDeduction > 0) {
+                          const pending = newVal.pendingDeduction;
+                          chrome.storage.local.set({ authState: { ...newVal, pendingDeduction: 0 } });
+                          import("./src/firebase-config.js").then(({ updateDoc }) => {
+                              getDoc(doc(db, "users", user.uid)).then(docSnap => {
+                                  if (docSnap.exists()) {
+                                      updateDoc(doc(db, "users", user.uid), {
+                                          points: Math.max(0, (docSnap.data().points || 0) - pending)
+                                      });
+                                  }
+                              });
+                          });
+                      }
+                  }
+              });
+          }
           chrome.storage.local.get(["authState"], (res) => {
               const pending = res.authState && res.authState.pendingDeduction ? res.authState.pendingDeduction : 0;
               if (pending > 0) {
@@ -306,6 +327,24 @@ document.addEventListener("DOMContentLoaded", () => {
                 setStatus("Lỗi kết nối. Hãy đảm bảo bạn đang ở đúng trang web tra điểm!", "error");
               } else if (response && response.success) {
                 if (response.count > 0) {
+                  // Deduct point if success
+                  const user = auth.currentUser;
+                  if (user) {
+                      chrome.storage.local.get(['authState'], (res) => {
+                          const state = res.authState || {};
+                          const email = (state.email || "").toLowerCase();
+                          const isAdmin = state.isAdmin === true || email === 'admin@admin.com' || email.includes('admin') || email === 'hvdkhoa89@gmail.com';
+                          const p = state.points || 0;
+                          const c = state.credits || 0;
+
+                          if (!isAdmin && p > 0 && c <= 0) {
+                              state.points -= 1;
+                              state.pendingDeduction = (state.pendingDeduction || 0) + 1;
+                              chrome.storage.local.set({ authState: state });
+                          }
+                      });
+                  }
+
                   let msg = `Đã điền NX cho ${response.count} HS (môn: ${response.detectedMon || '?'}).`;
                   if (response.detectedMon && response.detectedMon.includes("GVCN")) {
                       msg += " (Nếu có HS chưa được điền, hãy cuộn chuột xuống tít dưới rồi chạy lại)";
