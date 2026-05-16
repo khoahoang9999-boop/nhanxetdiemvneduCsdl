@@ -2511,8 +2511,8 @@ let editables = [];
           ? str
               .replace(/{HocSinh}/g, tenHS)
               .replace(/{Môn}/g, monToUse || "")
-              .replace(/\\$?\\{m\\}/g, "")
-              .replace(/[ \t\r]+/g, " ")
+              .replace(/\$?\{m\}/g, "")
+              .replace(/\s+/g, " ")
               .trim()
           : "";
 
