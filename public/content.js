@@ -2628,26 +2628,19 @@ let editables = [];
 
       const widget = document.createElement("div");
       widget.id = "tlnx-floating-widget";
-      widget.style.cssText = `position: fixed; top: 0px; left: 50%; transform: translateX(-50%); z-index: 2147483647; background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: white; padding: 4px 8px 4px 12px; border-radius: 9999px; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); display: flex; align-items: center; gap: 8px; font-family: Arial, system-ui, -apple-system, sans-serif; font-size: 14px; transition: all 0.3s ease; border: 1px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); flex-wrap: wrap; max-width: 400px; cursor: move;`;
+      widget.style.cssText = `position: fixed; top: 0px; left: 50%; transform: translateX(-50%); z-index: 2147483647; background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: white; padding: 6px 12px 6px 16px; border-radius: 9999px; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); display: flex; align-items: center; gap: 8px; font-family: Arial, system-ui, -apple-system, sans-serif; font-size: 15px; transition: all 0.3s ease; border: 1px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); width: max-content; max-width: 500px; cursor: move;`;
 
       // Integrated Big Run Button (replacing Brand + Run Button)
       const btnRun = document.createElement("button");
       const imgLogo = `
         <svg style="width: 18px; height: 18px; margin-right: 4px; border-radius: 4px;" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id="k-logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#fef08a" />
-              <stop offset="20%" stop-color="#facc15" />
-              <stop offset="100%" stop-color="#eab308" />
-            </linearGradient>
-          </defs>
-          <rect x="0" y="0" width="512" height="512" rx="100" ry="100" fill="url(#k-logo-grad)" />
+          <rect x="0" y="0" width="512" height="512" rx="100" ry="100" fill="#facc15" />
           <rect x="16" y="16" width="480" height="480" rx="84" ry="84" fill="none" stroke="#fef08a" stroke-width="12" stroke-opacity="0.8" />
-          <text x="256" y="375" font-family="Arial, sans-serif" font-weight="900" font-size="340" fill="#ffffff" text-anchor="middle" dominant-baseline="alphabetic">K</text>
+          <text x="256" y="380" font-family="'Arial', sans-serif" font-weight="900" text-anchor="middle" fill="#ffffff" style="font-size: 340px !important;">K</text>
         </svg>
       `.replace(/\n/g, '').trim();
-      btnRun.innerHTML = `${imgLogo}<span style="white-space: nowrap; font-weight: 700; margin: 0 4px;">CHẠY TỰ ĐỘNG ĐIỀN</span><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:14px;height:14px;display:block;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
-      btnRun.style.cssText = `background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 9999px; padding: 4px 10px; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275); margin-right: 4px; font-size: 11px;`;
+      btnRun.innerHTML = `${imgLogo}<span style="white-space: nowrap; font-weight: 700; margin: 0 4px;">CHẠY TỰ ĐỘNG ĐIỀN</span><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:16px;height:16px;display:block;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+      btnRun.style.cssText = `background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 9999px; padding: 6px 14px; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275); margin-right: 4px; font-size: 13px;`;
       btnRun.onmouseover = () => {
         btnRun.style.background = "rgba(255,255,255,0.25)";
         btnRun.style.transform = "scale(1.02)";
