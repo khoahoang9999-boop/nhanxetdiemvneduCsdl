@@ -98,15 +98,16 @@ document.addEventListener("DOMContentLoaded", () => {
         chrome.storage.local.get(["authState"], (res) => {
            let pending = res.authState && res.authState.pendingDeduction ? res.authState.pendingDeduction : 0;
            if (pending > 0) {
-               // Deduct the pending points
+               // Deduct the pending points from Firebase points field
                import("./src/firebase-config.js").then(({ updateDoc, increment }) => {
                  updateDoc(doc(db, "users", user.uid), {
-                   credits: increment(-pending)
+                   points: increment(-pending)
                  });
                });
-               chrome.storage.local.set({ authState: { uid: user.uid, email: user.email, credits: credits - pending, pendingDeduction: 0 } });
+               const currentPoints = res.authState && res.authState.points ? res.authState.points : 0;
+               chrome.storage.local.set({ authState: { uid: user.uid, email: user.email, credits: credits, points: Math.max(0, currentPoints - pending), pendingDeduction: 0 } });
            } else {
-               chrome.storage.local.set({ authState: { uid: user.uid, email: user.email, credits: credits, pendingDeduction: 0 } });
+               chrome.storage.local.set({ authState: { uid: user.uid, email: user.email, credits: credits, points: docSnap.data().points || 0, pendingDeduction: 0 } });
            }
         });
 

@@ -2628,19 +2628,19 @@ let editables = [];
 
       const widget = document.createElement("div");
       widget.id = "tlnx-floating-widget";
-      widget.style.cssText = `position: fixed; top: 0px; left: 50%; transform: translateX(-50%); z-index: 2147483647; background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: white; padding: 6px 12px 6px 16px; border-radius: 9999px; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); display: flex; align-items: center; gap: 8px; font-family: Arial, system-ui, -apple-system, sans-serif; font-size: 15px; transition: all 0.3s ease; border: 1px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); width: max-content; max-width: 500px; cursor: move;`;
+      widget.style.cssText = `position: fixed; top: 0px; left: 50%; transform: translateX(-50%); z-index: 2147483647; background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: white; padding: 8px 16px 8px 18px; border-radius: 9999px; box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4); display: flex; align-items: center; gap: 10px; font-family: Arial, system-ui, -apple-system, sans-serif; font-size: 16px; transition: all 0.3s ease; border: 1.5px solid rgba(255, 255, 255, 0.3); backdrop-filter: blur(12px); width: max-content; max-width: 600px; cursor: move;`;
 
       // Integrated Big Run Button (replacing Brand + Run Button)
       const btnRun = document.createElement("button");
       const imgLogo = `
-        <svg style="width: 18px; height: 18px; margin-right: 4px; border-radius: 4px;" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+        <svg style="width: 22px; height: 22px; margin-right: 6px; border-radius: 5px; flex-shrink: 0;" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
           <rect x="0" y="0" width="512" height="512" rx="100" ry="100" fill="#facc15" />
           <rect x="16" y="16" width="480" height="480" rx="84" ry="84" fill="none" stroke="#fef08a" stroke-width="12" stroke-opacity="0.8" />
           <text x="256" y="380" font-family="'Arial', sans-serif" font-weight="900" text-anchor="middle" fill="#ffffff" style="font-size: 340px !important;">K</text>
         </svg>
       `.replace(/\n/g, '').trim();
-      btnRun.innerHTML = `${imgLogo}<span style="white-space: nowrap; font-weight: 700; margin: 0 4px;">CHẠY TỰ ĐỘNG ĐIỀN</span><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:16px;height:16px;display:block;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
-      btnRun.style.cssText = `background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 9999px; padding: 6px 14px; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275); margin-right: 4px; font-size: 13px;`;
+      btnRun.innerHTML = `${imgLogo}<span style="white-space: nowrap; font-weight: 700; margin: 0 4px;">CHẠY TỰ ĐỘNG ĐIỀN</span><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:18px;height:18px;display:block;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+      btnRun.style.cssText = `background: rgba(255,255,255,0.2); color: white; border: 1.5px solid rgba(255,255,255,0.4); border-radius: 9999px; padding: 8px 18px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275); margin-right: 6px; font-size: 14px;`;
       btnRun.onmouseover = () => {
         btnRun.style.background = "rgba(255,255,255,0.25)";
         btnRun.style.transform = "scale(1.02)";
@@ -2803,7 +2803,7 @@ let editables = [];
           if (authState && authState.uid !== "guest") {
             const credits = authState.credits || 0;
             const points = authState.points || 0;
-            const createYearsBadge = (c) => `<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1;"><span style="font-size: 14px; font-weight: 900; height: 14px; margin-bottom: 2px; text-align: center; width: 100%; display: flex; justify-content: center;">${c}</span><span style="font-size: 11px; line-height: 11px; font-weight: 700; text-transform: lowercase; text-align: center; width: 100%; display: flex; justify-content: center;">năm</span></div>`;
+            const createYearsBadge = (c) => `<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; min-width: 38px;"><span style="font-size: 16px; font-weight: 900; line-height: 1; text-align: center; width: 100%; display: flex; justify-content: center; margin-bottom: 1px; color: #fbbf24;">${c}</span><span style="font-size: 10px; line-height: 1; font-weight: 700; text-transform: uppercase; text-align: center; width: 100%; display: flex; justify-content: center; opacity: 0.9; letter-spacing: 0.5px;">năm</span></div>`;
             const yearsText = createYearsBadge(credits > 0 ? credits : 0);
             
             // Show points if they exist, otherwise show years
