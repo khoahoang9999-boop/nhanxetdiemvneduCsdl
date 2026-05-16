@@ -59,6 +59,7 @@ export default defineConfig(({mode}) => {
     },
     build: {
       outDir: 'dist',
+      assetsDir: 'Tien-ich-nhan-xet',
       rollupOptions: {
         input: {
           main: path.resolve(__dirname, 'index.html'),

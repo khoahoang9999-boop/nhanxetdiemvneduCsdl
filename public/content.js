@@ -1536,6 +1536,14 @@ import { generateAllSampleData } from "../shared.js";
             if (matchedItem) break;
         }
 
+        if (!matchedItem) {
+            let fallbackOrder = itemsOrderParams;
+            if (textareas.length === 16) {
+                 fallbackOrder = itemsOrderParams.filter(x => x.name !== "Công nghệ" && x.name !== "Tin học");
+            }
+            matchedItem = fallbackOrder[i];
+        }
+
         let currentVal = ta.tagName.toLowerCase() === "div" ? ta.innerText.trim() : ta.value.trim();
         if (currentVal || !matchedItem) continue;
 
@@ -2620,7 +2628,7 @@ let editables = [];
 
       const widget = document.createElement("div");
       widget.id = "tlnx-floating-widget";
-      widget.style.cssText = `position: fixed; top: 0px; left: 50%; transform: translateX(-50%); z-index: 2147483647; background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: white; padding: 4px 8px 4px 12px; border-radius: 9999px; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); display: flex; align-items: center; gap: 8px; font-family: Arial, system-ui, -apple-system, sans-serif; font-size: 14px; transition: all 0.3s ease; border: 1px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); flex-wrap: wrap; max-width: 320px; cursor: move;`;
+      widget.style.cssText = `position: fixed; top: 0px; left: 50%; transform: translateX(-50%); z-index: 2147483647; background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: white; padding: 4px 8px 4px 12px; border-radius: 9999px; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); display: flex; align-items: center; gap: 8px; font-family: Arial, system-ui, -apple-system, sans-serif; font-size: 14px; transition: all 0.3s ease; border: 1px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); flex-wrap: wrap; max-width: 400px; cursor: move;`;
 
       // Integrated Big Run Button (replacing Brand + Run Button)
       const btnRun = document.createElement("button");
@@ -2802,13 +2810,14 @@ let editables = [];
           if (authState && authState.uid !== "guest") {
             const credits = authState.credits || 0;
             const points = authState.points || 0;
-            const yearsText = credits > 0 ? `${credits} năm` : "0 năm";
+            const createYearsBadge = (c) => `<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1;"><span style="font-size: 14px; font-weight: 900; height: 14px; margin-bottom: 2px; text-align: center; width: 100%; display: flex; justify-content: center;">${c}</span><span style="font-size: 11px; line-height: 11px; font-weight: 700; text-transform: lowercase; text-align: center; width: 100%; display: flex; justify-content: center;">năm</span></div>`;
+            const yearsText = createYearsBadge(credits > 0 ? credits : 0);
             
             // Show points if they exist, otherwise show years
             if (points > 0) {
-              lblPoints.innerHTML = `<span style="background: #10b981; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px;">${points} lượt</span> <span style="opacity:0.8; font-size:10px;">|</span> ${yearsText} ${whiteDiamondSvg}`;
+              lblPoints.innerHTML = `<span style="background: #10b981; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px;">${points} lượt</span> <span style="opacity:0.8; font-size:10px;">|</span> ${yearsText} <div style="display: flex; align-items: center; margin-left: 2px;">${whiteDiamondSvg}</div>`;
             } else {
-              lblPoints.innerHTML = `${yearsText} ${whiteDiamondSvg}`;
+              lblPoints.innerHTML = `${yearsText} <div style="display: flex; align-items: center; margin-left: 2px;">${whiteDiamondSvg}</div>`;
             }
             
             lblPoints.style.display = 'flex';

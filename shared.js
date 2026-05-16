@@ -937,6 +937,18 @@ export const getEmptyVneduNlpcHb = (khoi) => {
         "Có ý thức bảo vệ môi trường.",
         "Thích khám phá, tìm hiểu môi trường tự nhiên."
       ] },
+      "Công nghệ": { comments: [
+        "Thể hiện sự quan tâm đến công nghệ.",
+        "Thích tham gia các hoạt động lắp ráp.",
+        "Có ý thức giữ gìn đồ dùng học tập môn công nghệ.",
+        "Tích cực tham gia thực hành môn công nghệ."
+      ] },
+      "Tin học": { comments: [
+        "Thể hiện sự hứng thú với môn Tin học.",
+        "Thực hiện được các thao tác làm quen với máy tính.",
+        "Có ý thức giữ gìn thiết bị phòng máy.",
+        "Tích cực tham gia các tiết học môn Tin học."
+      ] },
       "Thẩm mĩ": { comments: [
         "Có khiếu thẩm mĩ.",
         "Biết phối kết hợp màu sắc hài hòa.",

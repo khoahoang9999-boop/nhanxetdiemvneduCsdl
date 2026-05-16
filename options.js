@@ -702,6 +702,10 @@ document.addEventListener("DOMContentLoaded", () => {
         "Phẩm chất": ["Nhận xét chung", "Yêu nước", "Nhân ái", "Chăm chỉ", "Trung thực", "Trách nhiệm"]
       };
 
+      if (["3", "4", "5"].includes(currentKhoiLop)) {
+          itemsMap["Năng lực đặc thù"].splice(4, 0, "Công nghệ", "Tin học");
+      }
+
       if (!currentData[currentCapHoc][currentKhoiLop].VNEDU_NLPC_HB) {
         currentData[currentCapHoc][currentKhoiLop].VNEDU_NLPC_HB = getEmptyVneduNlpcHb(currentKhoiLop);
       }
@@ -1574,8 +1578,12 @@ function renderData() {
     const data = currentData[currentCapHoc][currentKhoiLop].VNEDU_NLPC_HB || getEmptyVneduNlpcHb(currentKhoiLop);
 
     const nlChungItems = ["Nhận xét chung", "Tự chủ và tự học", "Giao tiếp và hợp tác", "GQVĐ và sáng tạo"];
-    const nlDacThuItems = ["Nhận xét năng lực đặc thù", "Ngôn ngữ", "Tính toán", "Khoa học", "Thẩm mĩ", "Thể chất"];
+    let nlDacThuItems = ["Nhận xét năng lực đặc thù", "Ngôn ngữ", "Tính toán", "Khoa học", "Thẩm mĩ", "Thể chất"];
     const pcItems = ["Nhận xét chung", "Yêu nước", "Nhân ái", "Chăm chỉ", "Trung thực", "Trách nhiệm"];
+
+    if (["3", "4", "5"].includes(currentKhoiLop)) {
+        nlDacThuItems.splice(4, 0, "Công nghệ", "Tin học");
+    }
 
     const renderTextarea = (groupId, itemLabel, colorClass) => {
        const groupData = data[groupId] || {};
