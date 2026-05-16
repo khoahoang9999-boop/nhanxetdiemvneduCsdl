@@ -125,30 +125,39 @@ async function startServer() {
       const userDoc = snapshot.docs[0];
       const userData = userDoc.data();
 
-      // 3. Logic nạp: Quy đổi tiền sang năm sử dụng dựa trên bảng giá
-      // Bảng giá: 1 NĂM (30.000đ), 2 NĂM (57.000đ), 3 NĂM (81.000đ), 5 NĂM (120.000đ)
+      // 3. Logic nạp: Lấy bảng giá từ config Firebase
+      const configDoc = await db.collection("config").doc("topup").get();
+      let packages = [];
+      if (configDoc.exists) {
+        const configData = configDoc.data() || {};
+        if (configData.packages && Array.isArray(configData.packages)) {
+          packages = configData.packages;
+        }
+      }
+
+      // Sắp xếp các gói giảm dần theo số tiền (để ưu tiên gói lớn trước)
+      packages.sort((a, b) => b.amt - a.amt);
+
+      if (packages.length === 0) {
+         // Fallback default
+         packages = [
+            { amt: 120000, pts: 5 },
+            { amt: 81000, pts: 3 },
+            { amt: 57000, pts: 2 },
+            { amt: 30000, pts: 1 },
+         ];
+      }
+
       let addedYearsForCredit = 0;
       let remainingAmount = amount;
 
-      // Tính số gói 5 năm
-      const packsOf5 = Math.floor(remainingAmount / 120000);
-      addedYearsForCredit += packsOf5 * 5;
-      remainingAmount %= 120000;
-
-      // Tính số gói 3 năm
-      const packsOf3 = Math.floor(remainingAmount / 81000);
-      addedYearsForCredit += packsOf3 * 3;
-      remainingAmount %= 81000;
-
-      // Tính số gói 2 năm
-      const packsOf2 = Math.floor(remainingAmount / 57000);
-      addedYearsForCredit += packsOf2 * 2;
-      remainingAmount %= 57000;
-
-      // Tính số gói 1 năm
-      const packsOf1 = Math.floor(remainingAmount / 30000);
-      addedYearsForCredit += packsOf1 * 1;
-      remainingAmount %= 30000;
+      for (const pkg of packages) {
+        const packs = Math.floor(remainingAmount / pkg.amt);
+        if (packs > 0) {
+          addedYearsForCredit += packs * pkg.pts;
+          remainingAmount %= pkg.amt;
+        }
+      }
 
       if (addedYearsForCredit <= 0) {
         console.warn(`[PAYMENT] Amount ${amount} is too low for any added time.`);
