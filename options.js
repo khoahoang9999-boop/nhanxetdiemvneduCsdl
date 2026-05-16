@@ -865,82 +865,177 @@ document.addEventListener("DOMContentLoaded", () => {
         "Mã NX",
         "Lời Phê",
       ];
+      
+      const sortMapLevels = (subData) => {
+        return Object.keys(subData).sort((a, b) => {
+          const itemA = subData[a];
+          const itemB = subData[b];
+          const maxA = itemA.max !== undefined && itemA.max !== "" ? Number(itemA.max) : -1;
+          const maxB = itemB.max !== undefined && itemB.max !== "" ? Number(itemB.max) : -1;
+          if (maxA !== maxB) return maxB - maxA;
+          const minA = itemA.min !== undefined && itemA.min !== "" ? Number(itemA.min) : -1;
+          const minB = itemB.min !== undefined && itemB.min !== "" ? Number(itemB.min) : -1;
+          
+          if (minA !== minB) return minB - minA;
+          // default string compare
+          if (a === "Mức độ Tốt") return -1;
+          if (b === "Mức độ Tốt") return 1;
+          return a.localeCompare(b);
+        });
+      };
 
-      const sheetsInfo = [
-        { name: "TH", cap: "TH", khoi: "1", mon: "Toán" },
-        { name: "THCS", cap: "THCS", khoi: "6", mon: "Toán" },
-        { name: "THPT", cap: "THPT", khoi: "10", mon: "Toán" },
-      ];
-
-      sheetsInfo.forEach((info) => {
+      const capHocs = ["TH", "THCS", "THPT"];
+      
+      capHocs.forEach(capHoc => {
         const ws_data = [headers];
-        const gvbmData = getEmptySubject(info.mon);
-        getEvalLevels(info.cap).forEach(lv => {
-          const item = gvbmData[lv];
-          const commentStr = item.comments.join("\n");
-          ws_data.push([
-            info.cap, info.khoi, "GVBM", info.mon, lv, item.min.toString(), item.max.toString(), item.code, commentStr
-          ]);
-        });
-        const dgtxData = getEmptyDGTX(info.mon, undefined, info.khoi);
-        getEvalLevels(info.cap, false, true).forEach(lv => {
-          const itemDgtx = dgtxData[lv];
-          const commentStrDgtx = itemDgtx.comments.join("\n");
-          ws_data.push([
-            info.cap, info.khoi, "DGTX", info.mon, lv, itemDgtx.min.toString(), itemDgtx.max.toString(), itemDgtx.code, commentStrDgtx
-          ]);
-        });
         
-        if (info.cap === "TH") {
-          ["Sổ tổng hợp - Môn học và HĐGD", "Sổ tổng hợp - Năng lực chung", "Sổ tổng hợp - Phẩm chất chủ yếu"].forEach(subj => {
-             const dData = getEmptyDGTX(subj, undefined, info.khoi);
-             getEvalLevels(info.cap, false, true).forEach(lv => {
-               const iData = dData[lv];
-               ws_data.push([
-                 info.cap, info.khoi, "DGTX", subj, lv, iData.min.toString(), iData.max.toString(), iData.code, iData.comments.join("\n")
-               ]);
-             });
-          });
-          const nlpcData = getEmptyThNlPc();
-          getEvalLevels(info.cap, true).forEach(lv => {
-            const iData = nlpcData[lv];
-            ws_data.push([
-              info.cap, info.khoi, "TH_NLPC", "Năng lực & Phẩm chất", lv, iData.min.toString(), iData.max.toString(), iData.code, iData.comments.join("\n")
-            ]);
+        if (currentData[capHoc]) {
+          // Sort khoi numerically
+          const khois = Object.keys(currentData[capHoc]).sort((a, b) => parseInt(a) - parseInt(b));
+          
+          khois.forEach(khoi => {
+            const kData = currentData[capHoc][khoi];
+            
+            // 1. GVBM
+            if (kData.GVBM) {
+              const sortedMons = Object.keys(kData.GVBM).sort((a, b) => a.localeCompare(b));
+              for (const mon of sortedMons) {
+                const subData = kData.GVBM[mon];
+                const sortedLevels = sortMapLevels(subData);
+                for (const lv of sortedLevels) {
+                  const item = subData[lv];
+                  const commentsStr = (item.comments || []).join("\n");
+                  ws_data.push([
+                    capHoc, khoi, "GVBM", mon, lv, 
+                    item.min !== undefined ? item.min.toString() : "", 
+                    item.max !== undefined ? item.max.toString() : "", 
+                    item.code || "", 
+                    commentsStr
+                  ]);
+                }
+              }
+            }
+            
+            // 2. DGTX
+            if (kData.DGTX) {
+              const sortedMons = Object.keys(kData.DGTX).sort((a, b) => a.localeCompare(b));
+              for (const mon of sortedMons) {
+                const subData = kData.DGTX[mon];
+                const sortedLevels = sortMapLevels(subData);
+                for (const lv of sortedLevels) {
+                  const item = subData[lv];
+                  const commentsStr = (item.comments || []).join("\n");
+                  ws_data.push([
+                    capHoc, khoi, "DGTX", mon, lv, 
+                    item.min !== undefined ? item.min.toString() : "", 
+                    item.max !== undefined ? item.max.toString() : "", 
+                    item.code || "", 
+                    commentsStr
+                  ]);
+                }
+              }
+            }
+            
+            // 3. TH_NLPC
+            if (kData.TH_NLPC) {
+              const sortedLevels = sortMapLevels(kData.TH_NLPC);
+              for (const lv of sortedLevels) {
+                const item = kData.TH_NLPC[lv];
+                const commentsStr = (item.comments || []).join("\n");
+                ws_data.push([
+                  capHoc, khoi, "TH_NLPC", "Năng lực & Phẩm chất", lv, 
+                  item.min !== undefined ? item.min.toString() : "", 
+                  item.max !== undefined ? item.max.toString() : "", 
+                  item.code || "", 
+                  commentsStr
+                ]);
+              }
+            }
+
+            // 4. VNEDU_NLPC_HB (exporting first so it shows up before HOC_BA)
+            if (kData.VNEDU_NLPC_HB) {
+              for (const group in kData.VNEDU_NLPC_HB) {
+                for (const itemLbl in kData.VNEDU_NLPC_HB[group]) {
+                  const item = kData.VNEDU_NLPC_HB[group][itemLbl];
+                  const commentsStr = (item.comments || []).join("\n");
+                  ws_data.push([
+                    capHoc, khoi, "VNEDU_NLPC_HB", group, itemLbl, 
+                    "", "", "", 
+                    commentsStr
+                  ]);
+                }
+              }
+            }
           });
         }
         
-        const ws = XLSX.utils.aoa_to_sheet(ws_data);
-        XLSX.utils.book_append_sheet(wb, ws, info.name);
+        if (ws_data.length > 1) {
+          const ws = XLSX.utils.aoa_to_sheet(ws_data);
+          XLSX.utils.book_append_sheet(wb, ws, capHoc);
+        }
       });
+      
+      // Hoc Ba Sheet
+      const hb_ws_data = [headers];
+      capHocs.forEach(capHoc => {
+        if (currentData[capHoc]) {
+          const khois = Object.keys(currentData[capHoc]).sort((a, b) => parseInt(a) - parseInt(b));
+          
+          khois.forEach(khoi => {
+            const kData = currentData[capHoc][khoi];
+            
+            // HOC_BA_GVBM
+            if (kData.HOC_BA_GVBM) {
+              const sortedLevels = sortMapLevels(kData.HOC_BA_GVBM);
+              for (const lv of sortedLevels) {
+                const item = kData.HOC_BA_GVBM[lv];
+                const commentsStr = (item.comments || []).join("\n");
+                hb_ws_data.push([
+                  capHoc, khoi, "HOC_BA_GVBM", "", lv, 
+                  item.min !== undefined ? item.min.toString() : "0", 
+                  item.max !== undefined ? item.max.toString() : "10", 
+                  item.code || "", 
+                  commentsStr
+                ]);
+              }
+            }
 
-      const hb_data = [headers];
-      const hbRoles = [
-        { role: "HOC_BA_GVBM", fn: getEmptyHocBaGVBM },
-        { role: "HOC_BA_GVCN", fn: getEmptyHocBaGVCN },
-        { role: "HIEU_TRUONG", fn: (khoi) => getEmptyHieuTruong(khoi) }
-      ];
+            // HOC_BA_GVCN
+            if (kData.HOC_BA_GVCN) {
+              const sortedLevels = sortMapLevels(kData.HOC_BA_GVCN);
+              for (const lv of sortedLevels) {
+                const item = kData.HOC_BA_GVCN[lv];
+                const commentsStr = (item.comments || []).join("\n");
+                hb_ws_data.push([
+                  capHoc, khoi, "HOC_BA_GVCN", "", lv, 
+                  item.min !== undefined ? item.min.toString() : "0", 
+                  item.max !== undefined ? item.max.toString() : "10", 
+                  item.code || "", 
+                  commentsStr
+                ]);
+              }
+            }
 
-      const capKhois = [
-        { cap: "TH", khoi: "1" },
-        { cap: "THCS", khoi: "6" },
-        { cap: "THPT", khoi: "10" }
-      ];
-
-      capKhois.forEach(ck => {
-        hbRoles.forEach(r => {
-          const data = r.fn(ck.khoi);
-          getEvalLevels(ck.cap).forEach(lv => {
-             const item = data[lv];
-             const commentStr = item.comments.join("\n");
-             hb_data.push([
-                ck.cap, ck.khoi, r.role, "", lv, item.min.toString(), item.max.toString(), item.code, commentStr
-             ]);
+            // HIEU_TRUONG
+            if (kData.HIEU_TRUONG) {
+              const sortedLevels = sortMapLevels(kData.HIEU_TRUONG);
+              for (const lv of sortedLevels) {
+                const item = kData.HIEU_TRUONG[lv];
+                const commentsStr = (item.comments || []).join("\n");
+                hb_ws_data.push([
+                  capHoc, khoi, "HIEU_TRUONG", "", lv, 
+                  item.min !== undefined ? item.min.toString() : "0", 
+                  item.max !== undefined ? item.max.toString() : "10", 
+                  item.code || "", 
+                  commentsStr
+                ]);
+              }
+            }
           });
-        });
+        }
       });
-
-      const hb_ws = XLSX.utils.aoa_to_sheet(hb_data);
+      
+      const hb_ws = XLSX.utils.aoa_to_sheet(hb_ws_data);
       XLSX.utils.book_append_sheet(wb, hb_ws, "Học Bạ");
 
       XLSX.writeFile(wb, "Mau_nhap_lieu.xlsx");
@@ -1200,6 +1295,19 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
 
                 newData[capHoc][khoiLop].HIEU_TRUONG[mucDo].comments = comments;
+              } else if (vaiTro === "VNEDU_NLPC_HB" && monHoc && mucDo) {
+                if (!newData[capHoc][khoiLop].VNEDU_NLPC_HB) {
+                  newData[capHoc][khoiLop].VNEDU_NLPC_HB = {};
+                }
+                if (!newData[capHoc][khoiLop].VNEDU_NLPC_HB[monHoc]) {
+                  newData[capHoc][khoiLop].VNEDU_NLPC_HB[monHoc] = {};
+                }
+                if (!newData[capHoc][khoiLop].VNEDU_NLPC_HB[monHoc][mucDo]) {
+                  newData[capHoc][khoiLop].VNEDU_NLPC_HB[monHoc][mucDo] = {
+                    comments: []
+                  };
+                }
+                newData[capHoc][khoiLop].VNEDU_NLPC_HB[monHoc][mucDo].comments = comments;
               }
             }
           });

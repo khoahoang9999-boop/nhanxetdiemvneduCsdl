@@ -149,6 +149,20 @@ auth.onAuthStateChanged(user => {
                 successNameEl.textContent = `Chào mừng ${user.displayName || user.email}`;
             }
             
+            const countdownEl = document.getElementById('success-countdown-msg');
+            let timeLeft = 5;
+            if (countdownEl) {
+                countdownEl.textContent = `Thông báo tự đóng và chuyển trang sau ${timeLeft} giây...`;
+                const timerId = setInterval(() => {
+                    timeLeft--;
+                    if (timeLeft > 0) {
+                        countdownEl.textContent = `Thông báo tự đóng và chuyển trang sau ${timeLeft} giây...`;
+                    } else {
+                        clearInterval(timerId);
+                    }
+                }, 1000);
+            }
+            
             setTimeout(() => {
                 if (successContainer.classList.contains('flex')) {
                     if (typeof window.closeAuthWindow === 'function') {
@@ -296,13 +310,16 @@ async function syncUserFirestore(user) {
                 credits: 0,
                 points: 0,
                 bankCode: bankCode,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                lastLoginAt: firebase.firestore.FieldValue.serverTimestamp()
             });
         } else {
             const data = doc.data();
             if (!data.bankCode) {
                 const bankCode = Math.floor(100000 + Math.random() * 900000).toString();
-                await userRef.update({ bankCode: bankCode });
+                await userRef.update({ bankCode: bankCode, lastLoginAt: firebase.firestore.FieldValue.serverTimestamp() });
+            } else {
+                await userRef.update({ lastLoginAt: firebase.firestore.FieldValue.serverTimestamp() });
             }
             if (!data.displayName && displayName) {
                 await userRef.update({ displayName: displayName });
@@ -465,6 +482,8 @@ function renderPackages() {
     container.innerHTML = '';
     
     globalTopupConfig.packages.forEach(pkg => {
+        if (pkg.hidden) return; // Skip hidden packages
+        
         // Calculate years based on dynamic admin rate
         const bRate = globalTopupConfig.baseRate || 30000;
         // The image shows specific years: 1, 2, 3, 5
@@ -626,7 +645,8 @@ function renderAdminPackages() {
                 pts: years,
                 amt: (globalTopupConfig.anchorAmt || 30000) * years,
                 bonus: 0,
-                hot: false
+                hot: false,
+                hidden: false
             });
         });
     } else {
@@ -636,7 +656,7 @@ function renderAdminPackages() {
     }
 }
 
-function addAdminPackageRow(pkg = {amt: 30000, pts: 1, bonus: 0, hot: false}) {
+function addAdminPackageRow(pkg = {amt: 30000, pts: 1, bonus: 0, hot: false, hidden: false}) {
     const list = document.getElementById('admin-packages-list');
     if (!list) return;
 
@@ -688,10 +708,16 @@ function addAdminPackageRow(pkg = {amt: 30000, pts: 1, bonus: 0, hot: false}) {
         </div>
 
         <div class="flex items-center justify-between border-t border-slate-100 mt-1.5 pt-1">
-            <label class="flex items-center gap-1 cursor-pointer">
-                <input type="checkbox" class="pkg-hot w-3 h-3 rounded text-red-600 focus:ring-red-500" ${pkg.hot ? 'checked' : ''}>
-                <span class="text-[8px] font-bold text-slate-400 uppercase">HOT</span>
-            </label>
+            <div class="flex items-center gap-3">
+                <label class="flex items-center gap-1 cursor-pointer">
+                    <input type="checkbox" class="pkg-hot w-3 h-3 rounded text-red-600 focus:ring-red-500" ${pkg.hot ? 'checked' : ''}>
+                    <span class="text-[8px] font-bold text-slate-400 uppercase">HOT</span>
+                </label>
+                <label class="flex items-center gap-1 cursor-pointer">
+                    <input type="checkbox" class="pkg-hidden w-3 h-3 rounded text-slate-400 focus:ring-slate-400" ${pkg.hidden ? 'checked' : ''}>
+                    <span class="text-[8px] font-bold text-slate-400 uppercase">ẨN GÓI</span>
+                </label>
+            </div>
             <button class="btn-create-qr-preview text-[8px] font-black text-slate-400 hover:text-blue-600 uppercase transition-colors">Thử QR</button>
         </div>
     `;
@@ -699,7 +725,7 @@ function addAdminPackageRow(pkg = {amt: 30000, pts: 1, bonus: 0, hot: false}) {
     row.querySelectorAll('input').forEach(input => {
         input.addEventListener('input', updatePreview);
     });
-    
+
     row.querySelector('.btn-delete-pkg').addEventListener('click', () => {
         row.remove();
     });
@@ -736,8 +762,11 @@ async function adminSaveTopupConfig() {
             const bonus = parseFloat(bonusInput.value) || 0;
             const hot = hotInput.checked;
             
+            const hiddenInput = row.querySelector('.pkg-hidden');
+            const hidden = hiddenInput ? hiddenInput.checked : false;
+            
             if (amt > 0) {
-                packages.push({ amt, pts, bonus, hot });
+                packages.push({ amt, pts, bonus, hot, hidden });
             }
         }
     });
@@ -1062,7 +1091,7 @@ function loadAdminUserList() {
             if (adminContainer) adminContainer.innerHTML = '';
             
             if(snapshot.empty) {
-                listObj.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-slate-400">Chưa có khách hàng nào</td></tr>';
+                listObj.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-slate-400">Chưa có khách hàng nào</td></tr>';
                 return;
             }
 
@@ -1075,19 +1104,21 @@ function loadAdminUserList() {
                 const isUserAdmin = data.email === ADMIN_EMAIL || (data.email && data.email.toLowerCase().includes("admin"));
                 
                 const expiryDate = data.expiryDate ? data.expiryDate.toDate().toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '--';
+                const lastLoginStr = data.lastLoginAt ? data.lastLoginAt.toDate().toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '--';
                 
                 let daysRemaining = '';
                 if (data.expiryDate && (data.credits > 0 || data.points > 0)) {
                     const now = new Date();
                     const diff = data.expiryDate.toDate().getTime() - now.getTime();
                     const days = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-                    daysRemaining = `<div class="text-[9px] text-emerald-600 font-black mt-0.5">${days > 0 ? 'Còn ' + days + ' ngày' : 'Đã hết hạn'}</div>`;
+                    daysRemaining = `<div class="text-[10px] sm:text-[11px] text-emerald-600 font-black mt-0.5">${days > 0 ? 'Còn ' + days + ' ngày' : 'Đã hết hạn'}</div>`;
                 }
 
                 if (isUserAdmin) {
                     adminRows.push(`
-                    <td class="px-2 py-3 text-center w-[5%] font-bold text-slate-300">--</td>
-                    <td class="px-4 py-3 font-bold text-slate-800 w-[40%]">
+                    <td class="px-2 py-3 text-center w-[5%] font-bold text-emerald-600">--</td>
+                    <td class="px-2 py-3 text-center w-[12%] font-bold text-[10px] sm:text-[11px] text-emerald-600">${lastLoginStr}</td>
+                    <td class="px-4 py-3 font-bold text-slate-800 w-[28%]">
                         <div class="flex items-center gap-2">
                              <div class="w-7 h-7 rounded-lg bg-red-100 text-red-700 flex items-center justify-center text-[10px] font-black">${(data.displayName || data.email || '?').charAt(0).toUpperCase()}</div>
                              <div class="flex flex-col">
@@ -1122,7 +1153,8 @@ function loadAdminUserList() {
                         credits: data.credits,
                         points: data.points,
                         expiryDateStr: expiryDate,
-                        daysRemaining: daysRemaining
+                        daysRemaining: daysRemaining,
+                        lastLoginStr: lastLoginStr
                     });
                 }
             });
@@ -1147,13 +1179,14 @@ function loadAdminUserList() {
                 const tr = document.createElement('tr');
                 tr.className = "border-b border-slate-100 hover:bg-slate-50 transition-colors";
                 tr.innerHTML = `
-                    <td class="px-2 py-3 text-center w-[5%] font-bold text-slate-400">${sttCount++}</td>
-                    <td class="px-4 py-3 font-bold text-slate-800 w-[40%]">
+                    <td class="px-2 py-3 text-center w-[5%] font-bold text-emerald-600">${sttCount++}</td>
+                    <td class="px-2 py-3 text-center w-[12%] font-bold text-[10px] sm:text-[11px] text-emerald-600">${u.lastLoginStr}</td>
+                    <td class="px-4 py-3 font-bold text-slate-800 w-[28%]">
                         <div class="flex items-center gap-2">
                              <div class="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-black">${(u.displayName || u.email || '?').charAt(0).toUpperCase()}</div>
                              <div class="flex flex-col">
                                 <span class="truncate max-w-[200px] leading-tight flex items-center gap-1">
-                                    ${u.displayName && u.displayName.trim() !== '' ? u.displayName : 'Khách vãng lai'}
+                                    ${u.displayName && u.displayName.trim() !== '' ? u.displayName : (u.email ? u.email.split('@')[0] : 'Khách')}
                                 </span>
                                 <span class="text-[8px] text-slate-400 font-medium">${u.email}</span>
                              </div>
@@ -1165,7 +1198,7 @@ function loadAdminUserList() {
                     <td class="px-4 py-3 text-center w-[10%]">
                         <span class="px-2.5 py-1 bg-amber-50 text-amber-700 rounded-full font-black text-[11px] border border-amber-100 shadow-inner">${u.points || 0} ĐIỂM</span>
                     </td>
-                    <td class="px-4 py-3 text-center w-[18%] text-[10px] font-bold text-slate-500">
+                    <td class="px-4 py-3 text-center w-[18%] text-[11px] sm:text-[12px] font-bold text-red-600">
                         <div>${u.expiryDateStr}</div>
                         ${u.daysRemaining}
                     </td>

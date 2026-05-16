@@ -14,13 +14,53 @@ import { generateAllSampleData } from "../shared.js";
         })
         .catch((err) => {
           console.error(err);
-          sendResponse({ success: false, error: err.message });
+          if (window === window.top && document.querySelectorAll("iframe").length > 0) {
+            // If top window fails but has iframes, let the iframe's success response win.
+            // We just wait a bit, if no iframe responds, we send the error.
+            setTimeout(() => {
+                sendResponse({ success: false, error: err.message });
+            }, 500);
+          } else {
+            sendResponse({ success: false, error: err.message });
+          }
         });
       return true;
     }
   });
   
+  const saveScrollState = () => {
+     let containers = Array.from(document.querySelectorAll('*')).filter(el => {
+         if (el.tagName === 'BODY' || el.tagName === 'HTML' || el.tagName === 'HEAD') return false;
+         const style = window.getComputedStyle(el);
+         return el.scrollHeight > el.clientHeight + 10 && 
+                (style.overflowY === 'auto' || style.overflowY === 'scroll');
+     });
+     return {
+        windowX: window.scrollX,
+        windowY: window.scrollY,
+        containers: containers.map(c => ({ el: c, top: c.scrollTop }))
+     };
+  };
+
+  const restoreScrollState = (state) => {
+      if (!state) return;
+      window.scrollTo({ left: state.windowX, top: state.windowY, behavior: 'instant' });
+      state.containers.forEach(s => {
+          if(s.el) s.el.scrollTop = s.top;
+      });
+  };
+
   async function fillCommentsAsync(config) {
+    const scrollState = saveScrollState();
+    try {
+      return await fillCommentsInner(config);
+    } finally {
+      // Delay restore slightly to ensure all DOM updates and scrolling have settled
+      setTimeout(() => restoreScrollState(scrollState), 100);
+    }
+  }
+
+  async function fillCommentsInner(config) {
     let fillCount = 0;
     let skippedNoScore = 0;
     let skippedNoInput = 0;
@@ -2550,7 +2590,7 @@ let editables = [];
       const btnRun = document.createElement("button");
       const iconUrl = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAACXBIWXMAAAsTAAALEwEAmpwYAAADA0lEQVR4nN2az2sTQRTH94/YGfWktKT4A9uKpgj+AW0tetWLN72bnQRU2qaNNoK31puCB71VWqwXb8WLFkECStW2thdNYqpof4Bk32YzT2YTWuLuhuxmsz/64J2yb/bznZn3srtvJMnGIEn6gZEplZF3wGhRZVQHRtEPV2v3KtbuTe5BgvRJrZqqyD2gkBd+wUKrrpB5NSXHmsKXE2RIVeh24LDMZmUUuqsq9LL1zDN5xM9t0s72Upk8bNo2KqM7QcNB6yuxXU6S7v2EZWQhaChw6gqdq8Er8pnAYZirrcSN6iRKZdAw4NpJRqrXeYzmKpAlsQKloEHArSu0IEWhdILtClBdchU8GkMtG2/09MnW4+90meOzcYTx445ZXAnQX2Xxf6vm5luK1SZOIS+tmeL5Vh617EC4BdTgV23g4662kW8CbOH/fHcN75sAkR/8x4o1/NQ51/C+CLCF//0NtamzbcF3XEAN/osZ/tcGapn+tuE7KyB9whr+5zpqmT5P4KFjAgR88bM1/GSvZ/DQEQG28F89hwfPBYz2IM9/MMNvrqE2edpzePBUwOpr5IVltDJxfSfgwUsBTa2qY+XRlQgLEPZ3q61/XPBLAN8pYeXZDeS7m+bf8h8Rbh0NrwC+8XYvWbWHI4i6ZrqmmpsLp4Dq+huE1JHG6xbGLIXqL8dDKCBn/SxUfT9rndSPr0ZDANw+Zvkw51VSSx0XIPLh/nnE8o4phheWDYGhFyC88uQaIueO4yAsAoy4xRmbpE5HQwAkD2N1ZdHTpJZ8FSB8rMd4G7NO6oEICBBJPT2IWAHTGLz4yXFSuxKgPbiAlafXG1ybHnI2xsywaQxjHIcv+Qfi02IxaBBw7/kD8HldIXeDBgHXTibqDe0ozj7lkKS99T4ZmQ8aCJz77H6bNSXHwtzgBvPsb5Vv0q7GXnFCvhiFkqoyqosTBdZHDRQyKNSF+qgBO3Sp+XmJJOkWTWQjScIz6xwU+ty0bZqZaCKLEitqregG+n7cxrgnWRK94L1qY2H/AAmuYBqO2CQnAAAAAElFTkSuQmCC";
       const imgLogo = `<img src="${iconUrl}" style="width: 18px; height: 18px; margin-right: 4px; border-radius: 4px;" alt="Logo" />`;
-      btnRun.innerHTML = `${imgLogo}<span style="white-space: nowrap; font-weight: 700; margin: 0 4px;">CHẠY</span><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:14px;height:14px;display:block;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>`;
+      btnRun.innerHTML = `${imgLogo}<span style="white-space: nowrap; font-weight: 700; margin: 0 4px;">CHẠY TỰ ĐỘNG ĐIỀN</span><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:14px;height:14px;display:block;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
       btnRun.style.cssText = `background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 9999px; padding: 4px 10px; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275); margin-right: 4px; font-size: 11px;`;
       btnRun.onmouseover = () => {
         btnRun.style.background = "rgba(255,255,255,0.25)";
@@ -2939,5 +2979,12 @@ let editables = [];
     } else {
       setTimeout(injectWidget, 1000); // Wait a bit for page to render fully
     }
+    
+    // Ensure widget stays alive in Single Page Applications (like VnEdu) where DOM is heavily modified
+    setInterval(() => {
+      if (!document.getElementById("tlnx-floating-widget")) {
+        injectWidget();
+      }
+    }, 1500);
   }
 })();
