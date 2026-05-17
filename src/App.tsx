@@ -80,8 +80,9 @@ export default function App() {
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-blue-600 border border-transparent hover:bg-blue-700 disabled:opacity-70 disabled:cursor-wait transition-all text-white rounded-md shadow drop-shadow-sm"
           >
             {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-            {isDownloading ? "Đang tạo file ZIP..." : "Tải Xuống Extension"}
+            {isDownloading ? "Đang tạo file ZIP..." : "Tải Xuống Bản Mới Nhất"}
           </button>
+
         </div>
       </header>
 

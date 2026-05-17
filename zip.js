@@ -6,6 +6,7 @@ const archive = archiver('zip', { zlib: { level: 9 } });
 
 output.on('close', function() {
   console.log(archive.pointer() + ' total bytes zip created.');
+  process.exit(0);
 });
 
 archive.on('error', function(err) {
@@ -15,3 +16,4 @@ archive.on('error', function(err) {
 archive.pipe(output);
 archive.directory('extension-build/', false);
 archive.finalize();
+
