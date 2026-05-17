@@ -32,6 +32,28 @@ let currentUserInfo = null;
 let unsubscribeCredit = null;
 let unsubscribeTopupConfig = null;
 
+async function getDeviceId() {
+    return new Promise((resolve) => {
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            chrome.storage.local.get(['deviceId'], (res) => {
+                if (res.deviceId) {
+                    resolve(res.deviceId);
+                } else {
+                    const newId = 'id' + Math.random().toString(36).substr(2, 10).toUpperCase();
+                    chrome.storage.local.set({ deviceId: newId }, () => resolve(newId));
+                }
+            });
+        } else {
+            let id = localStorage.getItem('tlnx_device_id');
+            if (!id) {
+                id = 'web' + Math.random().toString(36).substr(2, 10).toUpperCase();
+                localStorage.setItem('tlnx_device_id', id);
+            }
+            resolve(id);
+        }
+    });
+}
+
 let globalTopupConfig = {
   anchorAmt: 30000,
   anchorPts: 1,
@@ -298,6 +320,8 @@ auth.onAuthStateChanged(user => {
 // ======= 6. FIRESTORE SYNC & CREDITS =======
 async function syncUserFirestore(user) {
     const userRef = db.collection('users').doc(user.uid);
+    const deviceId = await getDeviceId();
+    const isAdmin = user.email === ADMIN_EMAIL || (user.email && user.email.toLowerCase().includes("admin")) || user.email === 'hvdkhoa89@gmail.com';
     
     try {
         const doc = await userRef.get();
@@ -311,11 +335,28 @@ async function syncUserFirestore(user) {
                 credits: 0,
                 points: 0,
                 bankCode: bankCode,
+                deviceIds: [deviceId],
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                 lastLoginAt: firebase.firestore.FieldValue.serverTimestamp()
             });
         } else {
             const data = doc.data();
+            const currentDevices = data.deviceIds || [];
+            
+            // KIỂM TRA GIỚI HẠN THIẾT BỊ (2 MÁY)
+            if (!isAdmin && !currentDevices.includes(deviceId)) {
+                if (currentDevices.length >= 2) {
+                    showToast("Tài khoản này đã đạt giới hạn 2 thiết bị. Vui lòng liên hệ Admin để reset!", "error");
+                    auth.signOut();
+                    return;
+                } else {
+                    // Thêm thiết bị mới nếu còn lượt
+                    await userRef.update({
+                        deviceIds: firebase.firestore.FieldValue.arrayUnion(deviceId)
+                    });
+                }
+            }
+
             if (!data.bankCode) {
                 const bankCode = Math.floor(100000 + Math.random() * 900000).toString();
                 await userRef.update({ bankCode: bankCode, lastLoginAt: firebase.firestore.FieldValue.serverTimestamp() });
@@ -1079,6 +1120,21 @@ async function adminDeleteUser(btn) {
     }
 }
 
+async function adminResetDevices(btn) {
+    const uid = btn.dataset.uid || btn.getAttribute('data-uid');
+    const email = btn.dataset.email || btn.getAttribute('data-email');
+    if (!uid) return;
+
+    try {
+        await db.collection('users').doc(uid).update({
+            deviceIds: []
+        });
+        showToast(`Đã Reset thiết bị cho tài khoản ${email} thành công.`, "success");
+    } catch (error) {
+        showToast("Lỗi Reset: " + error.message, "error");
+    }
+}
+
 async function adminResetPassword() {
     const email = document.getElementById('admin-target-email').value.trim();
     if(!email) return showToast("Vui lòng nhập Email", "error");
@@ -1227,6 +1283,9 @@ function loadAdminUserList() {
                     <td class="px-4 py-3 text-right w-[15%]">
                         <div class="flex items-center justify-end gap-1">
                             <button data-action="admin-fill-email" data-email="${u.email}" class="px-2 py-1 bg-slate-800 hover:bg-slate-900 text-white rounded text-[9px] uppercase font-bold transition-all shadow-sm">Chọn</button>
+                            <button data-action="admin-reset-devices" data-uid="${u.id}" data-email="${u.email}" class="p-1.5 bg-white border border-slate-200 text-slate-400 hover:text-blue-600 hover:border-blue-200 rounded transition-all" title="Reset thiết bị">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                            </button>
                             <button data-action="admin-delete-user" data-uid="${u.id}" data-email="${u.email}" class="p-1.5 bg-white border border-slate-200 text-slate-400 hover:text-red-600 hover:border-red-200 rounded transition-all" title="Xoá tài khoản">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
                             </button>
@@ -1280,7 +1339,9 @@ function init() {
             } else if (action === 'admin-reset-expiry') {
                 adminResetExpiry();
             } else if (action === 'admin-delete-user') {
-                adminDeleteUser(target);
+                adminDeleteUser(dataAction);
+            } else if (action === 'admin-reset-devices') {
+                adminResetDevices(dataAction);
             } else if (action === 'admin-reset-pw') {
                 adminResetPassword();
             } else if (action === 'admin-load-users') {

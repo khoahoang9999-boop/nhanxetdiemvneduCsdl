@@ -69,7 +69,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Firebase Auth Listener
   let unsubSnapshot = null;
-  onAuthStateChanged(auth, (user) => {
+
+  async function getDeviceId() {
+    return new Promise((resolve) => {
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            chrome.storage.local.get(['deviceId'], (res) => {
+                if (res.deviceId) {
+                    resolve(res.deviceId);
+                } else {
+                    const newId = 'id' + Math.random().toString(36).substr(2, 10).toUpperCase();
+                    chrome.storage.local.set({ deviceId: newId }, () => resolve(newId));
+                }
+            });
+        } else {
+            let id = localStorage.getItem('tlnx_device_id');
+            if (!id) {
+                id = 'web' + Math.random().toString(36).substr(2, 10).toUpperCase();
+                localStorage.setItem('tlnx_device_id', id);
+            }
+            resolve(id);
+        }
+    });
+  }
+
+  onAuthStateChanged(auth, async (user) => {
     if (user) {
       if (unauthState) {
         unauthState.classList.add("hidden");
@@ -96,13 +119,48 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       if (unsubSnapshot) unsubSnapshot();
-      unsubSnapshot = onSnapshot(doc(db, "users", user.uid), (docSnap) => {
+      unsubSnapshot = onSnapshot(doc(db, "users", user.uid), async (docSnap) => {
         let credits = 0;
         let points = 0;
         if (docSnap.exists()) {
           const data = docSnap.data();
           credits = data.credits || 0;
           points = data.points || 0;
+
+          // KIỂM TRA GIỚI HẠN THIẾT BỊ
+          const deviceId = await getDeviceId();
+          const isAdmin = user.email === "hvdkhoa89@gmail.com" || (user.email && user.email.toLowerCase().includes("admin")) || user.email === 'hvdkhoa89@gmail.com';
+          const currentDevices = data.deviceIds || [];
+
+          if (!isAdmin && !currentDevices.includes(deviceId)) {
+              if (currentDevices.length >= 2) {
+                  authStatusMessage.textContent = "Tài khoản đã đạt giới hạn 2 thiết bị. Vui lòng liên hệ Admin!";
+                  authStatusMessage.className = "text-center text-red-500 font-bold mb-2 p-2 bg-red-50 rounded text-[11px]";
+                  userInfo.classList.add("hidden");
+                  logoutBtn.classList.remove("hidden");
+                  unauthButtons.classList.add("hidden");
+                  runBtn.disabled = true;
+                  runBtn.classList.add("opacity-50", "cursor-not-allowed");
+                  return;
+              } else {
+                  // If under limit, we could auto-add here too for safety
+                  import("./src/firebase-config.js").then(({ updateDoc, arrayUnion }) => {
+                      updateDoc(doc(db, "users", user.uid), {
+                          deviceIds: arrayUnion(deviceId)
+                      });
+                  });
+              }
+          } else {
+              if (authStatusMessage) {
+                  authStatusMessage.textContent = "";
+                  authStatusMessage.className = "hidden";
+              }
+              if (userInfo) userInfo.classList.remove("hidden");
+              if (runBtn) {
+                  runBtn.disabled = false;
+                  runBtn.classList.remove("opacity-50", "cursor-not-allowed");
+              }
+          }
         }
         
         if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
